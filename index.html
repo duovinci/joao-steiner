@@ -1512,7 +1512,7 @@ function Financeiro({
 }
 const ST_LABEL = {
   pendente: "Pendente",
-  aprovada: "Aprovada",
+  aprovada: "Na fila",
   enviada: "Enviada",
   paga: "Paga",
   nao_paga: "Não paga",
@@ -1604,35 +1604,23 @@ function Cobrancas({
       className: ST_COLOR[c.status]
     }, ST_LABEL[c.status])), c.status === "pendente" && /*#__PURE__*/React.createElement("div", {
       className: `text-xs mt-2 ${pronta ? 'text-clay font-semibold' : 'text-slate-400'}`
-    }, pronta ? "Pronta pra enviar" : `Envia em ${fmtData(c.data_prevista_envio + "T12:00:00")}`), (c.status === "aprovada" || c.status === "enviada") && c.mensagem && /*#__PURE__*/React.createElement("div", {
+    }, pronta ? "Pronta pra cobrar" : `Prazo em ${fmtData(c.data_prevista_envio + "T12:00:00")} (dá pra cobrar antes)`), c.status === "aprovada" && /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mt-2 text-violet-700 font-semibold"
+    }, "Na fila de envio pelo WhatsApp\u2026 (sai em at\xE9 1 min)"), (c.status === "aprovada" || c.status === "enviada") && c.mensagem && /*#__PURE__*/React.createElement("div", {
       className: "mt-3 text-xs bg-black/[.03] rounded-xl px-3 py-2.5 text-slate-600 whitespace-pre-wrap leading-relaxed"
     }, c.mensagem), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-wrap gap-2 mt-3"
     }, c.status === "pendente" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
+      variant: "accent",
       onClick: () => aprovar(c)
-    }, "Aprovar"), /*#__PURE__*/React.createElement(Btn, {
+    }, /*#__PURE__*/React.createElement(IcWhats, {
+      className: "w-4 h-4"
+    }), "Cobrar"), /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "outline",
       onClick: () => setStatus(c, "cancelada")
-    }, "Cancelar")), c.status === "aprovada" && /*#__PURE__*/React.createElement(React.Fragment, null, wa && /*#__PURE__*/React.createElement("a", {
-      href: wa,
-      target: "_blank",
-      rel: "noreferrer",
-      className: "flex-1 min-w-[160px]"
-    }, /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "dark",
-      className: "w-full"
-    }, /*#__PURE__*/React.createElement(IcWhats, {
-      className: "w-4 h-4"
-    }), "Enviar no WhatsApp")), /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "soft",
-      onClick: () => setStatus(c, "enviada", {
-        data_enviada: new Date().toISOString()
-      })
-    }, "Marcar enviada")), (c.status === "aprovada" || c.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
+    }, "Cancelar")), (c.status === "aprovada" || c.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "accent",
       onClick: () => setStatus(c, "paga", {
@@ -1648,7 +1636,16 @@ function Cobrancas({
       onClick: () => setStatus(c, "paga", {
         data_pagamento: new Date().toISOString()
       })
-    }, "Recebi agora"), /*#__PURE__*/React.createElement(Btn, {
+    }, "Recebi agora"), c.status === "aprovada" && wa && /*#__PURE__*/React.createElement("a", {
+      href: wa,
+      target: "_blank",
+      rel: "noreferrer"
+    }, /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "ghost"
+    }, /*#__PURE__*/React.createElement(IcWhats, {
+      className: "w-4 h-4"
+    }), "enviar na m\xE3o")), /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "ghost",
       onClick: () => setEdit(c),
@@ -1656,7 +1653,7 @@ function Cobrancas({
     }, "Editar")));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 px-1 leading-relaxed"
-  }, "Aula avulsa realizada entra como ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Voc\xEA aprova, envia pelo WhatsApp e marca ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
+  }, "Aula avulsa realizada vira ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Toque em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), " e o sistema envia a mensagem sozinho pelo WhatsApp. Quem pagou em dinheiro, \xE9 s\xF3 marcar ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
     cobranca: edit,
     onClose: () => setEdit(null),
     onSaved: () => {
