@@ -601,14 +601,29 @@ function Dashboard({
 }) {
   const now = new Date();
   const mesIni = new Date(now.getFullYear(), now.getMonth(), 1);
-  const aReceber = cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)).reduce((s, c) => s + Number(c.valor), 0);
-  const nAReceber = cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)).length;
+  const diasCob = cfg?.dias_cobranca || 7;
+  // recebíveis = aulas avulsas realizadas (mesma lógica do Financeiro)
+  const coByAula = {};
+  cobrancas.forEach(c => {
+    if (c.aula_id) coByAula[c.aula_id] = c;
+  });
+  const recs = aulas.filter(a => a.status === "realizada" && a.aluno?.tipo === "avulso").map(a => {
+    const co = coByAula[a.id] || null;
+    return {
+      status: co ? co.status : "pendente",
+      valor: co ? Number(co.valor) : Number(a.valor),
+      prevista: co?.data_prevista_envio || toDateInput(addDays(new Date(a.data_hora), diasCob))
+    };
+  });
+  const abertos = recs.filter(r => ["pendente", "aprovada", "enviada", "nao_paga"].includes(r.status));
+  const aReceber = abertos.reduce((s, r) => s + (r.valor || 0), 0);
+  const nAReceber = abertos.length;
   const recebidoMes = cobrancas.filter(c => c.status === "paga" && c.data_pagamento && new Date(c.data_pagamento) >= mesIni).reduce((s, c) => s + Number(c.valor), 0);
   const gastoMes = despesas.filter(d => new Date(d.data + "T12:00:00") >= mesIni).reduce((s, d) => s + Number(d.valor), 0);
   const saldoMes = recebidoMes - gastoMes;
   const hoje = aulas.filter(a => sameDay(new Date(a.data_hora), now) && a.status !== "cancelada").sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
   const proximas = aulas.filter(a => a.status === "agendada" && new Date(a.data_hora) > now).slice(0, 4);
-  const prontas = cobrancas.filter(c => c.status === "pendente" && new Date(c.data_prevista_envio + "T23:59:59") <= now);
+  const prontas = recs.filter(r => r.status === "pendente" && new Date(r.prevista + "T23:59:59") <= now);
   const renovar = alunos.filter(a => a.tipo === "pacote" && (a.saldo_pacote ?? 0) <= 2 && a.ativo);
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-5"
@@ -1050,6 +1065,7 @@ function AulaModal({
   const [valor, setValor] = useState(a?.valor ?? "");
   const [busy, setBusy] = useState(false);
   const alunoSel = alunos.find(x => x.id === alunoId);
+  const passada = new Date(`${data}T${hora}:00`) < new Date();
   useEffect(() => {
     if (!editing && alunoSel) {
       if (alunoSel.modalidade) setModalidade(alunoSel.modalidade);
@@ -1070,6 +1086,36 @@ function AulaModal({
       valor: Number(valor) || 0
     };
     if (editing) await sb.from("aulas").update(payload).eq("id", a.id);else await sb.from("aulas").insert(payload);
+    setBusy(false);
+    onSaved();
+  };
+  // salva uma aula nova já como feita (pra lançar histórico passado)
+  const salvarFeita = async () => {
+    if (!alunoId || !modalidade) {
+      alert("Escolha o aluno e a modalidade.");
+      return;
+    }
+    setBusy(true);
+    const dh = new Date(`${data}T${hora}:00`);
+    const {
+      data: ins
+    } = await sb.from("aulas").insert({
+      aluno_id: alunoId,
+      data_hora: dh.toISOString(),
+      modalidade,
+      valor: Number(valor) || 0,
+      status: "realizada"
+    }).select("id").single();
+    if (alunoSel?.tipo === "avulso" && ins?.id) {
+      const prevista = addDays(dh, cfg?.dias_cobranca || 7);
+      await sb.from("cobrancas").insert({
+        aula_id: ins.id,
+        aluno_id: alunoId,
+        valor: Number(valor) || 0,
+        status: "pendente",
+        data_prevista_envio: toDateInput(prevista)
+      });
+    }
     setBusy(false);
     onSaved();
   };
@@ -1192,7 +1238,14 @@ function AulaModal({
     onClick: marcarRealizada,
     disabled: busy,
     className: "flex-1"
-  }, "\u2713 Marcar feita")), editing && /*#__PURE__*/React.createElement("div", {
+  }, "\u2713 Marcar feita"), !editing && passada && /*#__PURE__*/React.createElement(Btn, {
+    variant: "accent",
+    onClick: salvarFeita,
+    disabled: busy,
+    className: "flex-1"
+  }, "\u2713 Salvar feita")), !editing && passada && /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-slate-400 px-1"
+  }, "Aula no passado: use ", /*#__PURE__*/React.createElement("b", null, "Salvar feita"), " pra j\xE1 entrar no financeiro."), editing && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2"
   }, a.status === "agendada" && /*#__PURE__*/React.createElement(Btn, {
     variant: "outline",
@@ -1481,6 +1534,7 @@ function AlunoModal({
 
 // ===================== FINANCEIRO =====================
 function Financeiro({
+  aulas,
   cobrancas,
   despesas,
   cfg,
@@ -1499,6 +1553,7 @@ function Financeiro({
     onClick: () => setSub(k),
     className: `flex-1 py-2 rounded-lg transition ${sub === k ? 'bg-white shadow-sm text-court-700' : 'text-slate-500'}`
   }, v))), sub === "cobrancas" ? /*#__PURE__*/React.createElement(Cobrancas, {
+    aulas: aulas,
     cobrancas: cobrancas,
     cfg: cfg,
     reload: reload
@@ -1526,8 +1581,8 @@ const ST_COLOR = {
   nao_paga: "bg-red-50 text-red-700 ring-1 ring-red-200",
   cancelada: "bg-slate-100 text-slate-400"
 };
-const prazoPassou = (c, now) => c.data_prevista_envio && new Date(c.data_prevista_envio + "T23:59:59") <= now;
 function Cobrancas({
+  aulas,
   cobrancas,
   cfg,
   reload
@@ -1535,37 +1590,71 @@ function Cobrancas({
   const [filtro, setFiltro] = useState("aberto");
   const [edit, setEdit] = useState(null);
   const now = new Date();
-  const dataAula = c => c.aula ? new Date(c.aula.data_hora).getTime() : 0;
+  const dias = cfg?.dias_cobranca || 7;
+
+  // cobrança indexada pela aula
+  const coByAula = useMemo(() => {
+    const m = {};
+    cobrancas.forEach(c => {
+      if (c.aula_id) m[c.aula_id] = c;
+    });
+    return m;
+  }, [cobrancas]);
+
+  // RECEBÍVEIS = toda aula avulsa já realizada. A aula é a fonte da verdade;
+  // a cobrança (se existir) só carrega o status do pagamento.
+  const recs = useMemo(() => aulas.filter(a => a.status === "realizada" && a.aluno?.tipo === "avulso").map(a => {
+    const co = coByAula[a.id] || null;
+    const status = co ? co.status : "pendente";
+    const valor = co ? co.valor : a.valor;
+    const prevista = co?.data_prevista_envio || toDateInput(addDays(new Date(a.data_hora), dias));
+    return {
+      id: a.id,
+      aula: a,
+      aluno: a.aluno,
+      co,
+      status,
+      valor,
+      prevista
+    };
+  }), [aulas, coByAula, dias]);
+  const prazoPassou = r => new Date(r.prevista + "T23:59:59") <= now;
+  const dataAula = r => new Date(r.aula.data_hora).getTime();
   const grupos = {
-    todas: [...cobrancas].sort((a, b) => dataAula(b) - dataAula(a)),
-    aberto: cobrancas.filter(c => ["pendente", "aprovada", "enviada", "nao_paga"].includes(c.status)).sort((a, b) => dataAula(a) - dataAula(b)),
-    cobrar: cobrancas.filter(c => c.status === "pendente" && prazoPassou(c, now)).sort((a, b) => dataAula(a) - dataAula(b)),
-    pagas: cobrancas.filter(c => c.status === "paga").sort((a, b) => new Date(b.data_pagamento || 0) - new Date(a.data_pagamento || 0))
+    todas: [...recs].filter(r => r.status !== "cancelada").sort((a, b) => dataAula(b) - dataAula(a)),
+    aberto: recs.filter(r => ["pendente", "aprovada", "enviada", "nao_paga"].includes(r.status)).sort((a, b) => dataAula(a) - dataAula(b)),
+    cobrar: recs.filter(r => r.status === "pendente" && prazoPassou(r)).sort((a, b) => dataAula(a) - dataAula(b)),
+    pagas: recs.filter(r => r.status === "paga").sort((a, b) => new Date(b.co?.data_pagamento || 0) - new Date(a.co?.data_pagamento || 0))
   };
   const lista = grupos[filtro] || [];
-  const aprovar = async c => {
-    const msg = renderMsg(cfg?.mensagem_template, {
-      nome: c.aluno?.nome,
-      modalidade: c.aula?.modalidade,
-      data: c.aula ? fmtData(c.aula.data_hora) : "",
-      valor: c.valor,
-      pix_chave: cfg?.pix_chave,
-      pix_nome: cfg?.pix_nome
+  const totalAberto = grupos.aberto.reduce((s, r) => s + Number(r.valor || 0), 0);
+  const msgFor = r => renderMsg(cfg?.mensagem_template, {
+    nome: r.aluno?.nome,
+    modalidade: r.aula?.modalidade,
+    data: fmtData(r.aula.data_hora),
+    valor: r.valor,
+    pix_chave: cfg?.pix_chave,
+    pix_nome: cfg?.pix_nome
+  });
+  // garante que exista uma linha de cobrança pra essa aula; cria se faltar
+  const ensureCo = async (r, campos) => {
+    if (r.co) await sb.from("cobrancas").update(campos).eq("id", r.co.id);else await sb.from("cobrancas").insert({
+      aula_id: r.aula.id,
+      aluno_id: r.aula.aluno_id,
+      valor: Number(r.valor) || 0,
+      data_prevista_envio: r.prevista,
+      ...campos
     });
-    await sb.from("cobrancas").update({
-      status: "aprovada",
-      mensagem: msg
-    }).eq("id", c.id);
     reload();
   };
-  const setStatus = async (c, st, extra = {}) => {
-    await sb.from("cobrancas").update({
-      status: st,
-      ...extra
-    }).eq("id", c.id);
-    reload();
-  };
-  const totalAberto = grupos.aberto.reduce((s, c) => s + Number(c.valor || 0), 0);
+  const cobrar = r => ensureCo(r, {
+    status: "aprovada",
+    mensagem: msgFor(r)
+  });
+  const marcar = (r, st, extra = {}) => ensureCo(r, {
+    status: st,
+    ...extra
+  });
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1585,21 +1674,14 @@ function Cobrancas({
     className: "text-slate-600 num"
   }, BRL(totalAberto))), lista.length === 0 ? /*#__PURE__*/React.createElement(Card, {
     className: "p-8"
-  }, /*#__PURE__*/React.createElement(Empty, null, filtro === "cobrar" ? "Ninguém pra cobrar agora. Tudo em dia." : filtro === "pagas" ? "Nenhuma aula paga ainda." : "Nada aqui.")) : /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Empty, null, filtro === "cobrar" ? "Ninguém pra cobrar agora. Tudo em dia." : filtro === "pagas" ? "Nenhuma aula paga ainda." : filtro === "aberto" ? "Nada em aberto. Tudo pago." : "Nenhuma aula avulsa realizada ainda.")) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-2.5"
-  }, lista.map(c => {
-    const pronta = c.status === "pendente" && new Date(c.data_prevista_envio + "T23:59:59") <= now;
-    const tel = c.aluno?.telefone ? c.aluno.telefone.replace(/\D/g, "") : null;
-    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(c.mensagem || renderMsg(cfg?.mensagem_template, {
-      nome: c.aluno?.nome,
-      modalidade: c.aula?.modalidade,
-      data: c.aula ? fmtData(c.aula.data_hora) : "",
-      valor: c.valor,
-      pix_chave: cfg?.pix_chave,
-      pix_nome: cfg?.pix_nome
-    }))}` : null;
+  }, lista.map(r => {
+    const pronta = r.status === "pendente" && prazoPassou(r);
+    const tel = r.aluno?.telefone ? r.aluno.telefone.replace(/\D/g, "") : null;
+    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(r.co?.mensagem || msgFor(r))}` : null;
     return /*#__PURE__*/React.createElement(Card, {
-      key: c.id,
+      key: r.id,
       className: `p-4 ${pronta ? 'ring-clay/30' : ''}`
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-start justify-between gap-3"
@@ -1607,47 +1689,57 @@ function Cobrancas({
       className: "min-w-0"
     }, /*#__PURE__*/React.createElement("div", {
       className: "font-semibold text-slate-800"
-    }, c.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+    }, r.aluno?.nome), /*#__PURE__*/React.createElement("div", {
       className: "text-xs text-slate-400 mt-0.5"
-    }, c.aula && /*#__PURE__*/React.createElement(React.Fragment, null, fmtData(c.aula.data_hora), " \xB7 ", MODS[c.aula.modalidade], " \xB7 "), /*#__PURE__*/React.createElement("span", {
+    }, "Aula ", fmtData(r.aula.data_hora), " \xB7 ", MODS[r.aula.modalidade], " \xB7 ", /*#__PURE__*/React.createElement("span", {
       className: "font-display font-semibold text-slate-600 num"
-    }, BRL(c.valor)))), /*#__PURE__*/React.createElement(Badge, {
-      className: ST_COLOR[c.status]
-    }, ST_LABEL[c.status])), c.status === "pendente" && /*#__PURE__*/React.createElement("div", {
+    }, BRL(r.valor)))), /*#__PURE__*/React.createElement(Badge, {
+      className: ST_COLOR[r.status]
+    }, ST_LABEL[r.status])), r.status === "pendente" && /*#__PURE__*/React.createElement("div", {
       className: `text-xs mt-2 ${pronta ? 'text-clay font-semibold' : 'text-slate-400'}`
-    }, pronta ? "Pronta pra cobrar" : `Prazo em ${fmtData(c.data_prevista_envio + "T12:00:00")} (dá pra cobrar antes)`), c.status === "aprovada" && /*#__PURE__*/React.createElement("div", {
+    }, pronta ? "Pronta pra cobrar" : `Prazo em ${fmtData(r.prevista + "T12:00:00")} (dá pra cobrar antes)`), r.status === "aprovada" && /*#__PURE__*/React.createElement("div", {
       className: "text-xs mt-2 text-violet-700 font-semibold"
-    }, "Na fila de envio pelo WhatsApp\u2026 (sai em at\xE9 1 min)"), (c.status === "aprovada" || c.status === "enviada") && c.mensagem && /*#__PURE__*/React.createElement("div", {
+    }, "Na fila de envio pelo WhatsApp\u2026 (sai em at\xE9 1 min)"), r.status === "paga" && r.co?.data_pagamento && /*#__PURE__*/React.createElement("div", {
+      className: "text-xs mt-2 text-court-700 font-semibold"
+    }, "Pago em ", fmtData(r.co.data_pagamento)), (r.status === "aprovada" || r.status === "enviada") && r.co?.mensagem && /*#__PURE__*/React.createElement("div", {
       className: "mt-3 text-xs bg-black/[.03] rounded-xl px-3 py-2.5 text-slate-600 whitespace-pre-wrap leading-relaxed"
-    }, c.mensagem), /*#__PURE__*/React.createElement("div", {
+    }, r.co.mensagem), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-wrap gap-2 mt-3"
-    }, c.status === "pendente" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Btn, {
+    }, r.status === "pendente" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "accent",
-      onClick: () => aprovar(c)
+      onClick: () => cobrar(r)
     }, /*#__PURE__*/React.createElement(IcWhats, {
       className: "w-4 h-4"
     }), "Cobrar"), /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
-      variant: "outline",
-      onClick: () => setStatus(c, "cancelada")
-    }, "Cancelar")), (c.status === "aprovada" || c.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "accent",
-      onClick: () => setStatus(c, "paga", {
+      variant: "soft",
+      onClick: () => marcar(r, "paga", {
         data_pagamento: new Date().toISOString()
       })
-    }, "Recebi"), c.status === "enviada" && /*#__PURE__*/React.createElement(Btn, {
+    }, "Recebi em dinheiro")), (r.status === "aprovada" || r.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "accent",
+      onClick: () => marcar(r, "paga", {
+        data_pagamento: new Date().toISOString()
+      })
+    }, "Recebi"), r.status === "enviada" && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "danger",
-      onClick: () => setStatus(c, "nao_paga")
-    }, "N\xE3o pagou"), c.status === "nao_paga" && /*#__PURE__*/React.createElement(Btn, {
+      onClick: () => marcar(r, "nao_paga")
+    }, "N\xE3o pagou"), r.status === "nao_paga" && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "accent",
-      onClick: () => setStatus(c, "paga", {
+      onClick: () => marcar(r, "paga", {
         data_pagamento: new Date().toISOString()
       })
-    }, "Recebi agora"), c.status === "aprovada" && wa && /*#__PURE__*/React.createElement("a", {
+    }, "Recebi agora"), r.status === "paga" && /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "outline",
+      onClick: () => marcar(r, "pendente", {
+        data_pagamento: null
+      })
+    }, "Desfazer"), r.status === "aprovada" && wa && /*#__PURE__*/React.createElement("a", {
       href: wa,
       target: "_blank",
       rel: "noreferrer"
@@ -1656,15 +1748,15 @@ function Cobrancas({
       variant: "ghost"
     }, /*#__PURE__*/React.createElement(IcWhats, {
       className: "w-4 h-4"
-    }), "enviar na m\xE3o")), /*#__PURE__*/React.createElement(Btn, {
+    }), "enviar na m\xE3o")), r.co && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "ghost",
-      onClick: () => setEdit(c),
+      onClick: () => setEdit(r.co),
       className: "ml-auto"
     }, "Editar")));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 px-1 leading-relaxed"
-  }, "Aula avulsa realizada vira ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Toque em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), " e o sistema envia a mensagem sozinho pelo WhatsApp. Quem pagou em dinheiro, \xE9 s\xF3 marcar ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
+  }, "Toda aula ", /*#__PURE__*/React.createElement("b", null, "avulsa marcada como feita"), " entra aqui como receb\xEDvel. Passou ", dias, " dias, aparece em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), ". Toque em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), " e o sistema dispara a mensagem sozinho pelo WhatsApp; quem pagou em dinheiro, marque ", /*#__PURE__*/React.createElement("b", null, "Recebi"), ". Aluno de pacote n\xE3o entra (j\xE1 \xE9 pr\xE9-pago)."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
     cobranca: edit,
     onClose: () => setEdit(null),
     onSaved: () => {
