@@ -343,7 +343,7 @@ function App() {
     className: "flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8"
   }, /*#__PURE__*/React.createElement("div", {
     className: "max-w-4xl mx-auto px-4 pt-5 sm:px-8 sm:pt-8"
-  }, loading ? /*#__PURE__*/React.createElement(Skeleton, null) : tab === "dash" ? /*#__PURE__*/React.createElement(Dashboard, _extends({}, ctx, {
+  }, loading && !cfg ? /*#__PURE__*/React.createElement(Skeleton, null) : tab === "dash" ? /*#__PURE__*/React.createElement(Dashboard, _extends({}, ctx, {
     go: setTab
   })) : tab === "agenda" ? /*#__PURE__*/React.createElement(Agenda, ctx) : tab === "alunos" ? /*#__PURE__*/React.createElement(Alunos, ctx) : /*#__PURE__*/React.createElement(Financeiro, ctx))), /*#__PURE__*/React.createElement("nav", {
     className: "sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-black/5 grid grid-cols-4 pb-[env(safe-area-inset-bottom)]"
@@ -1249,9 +1249,10 @@ function Alunos({
   const diasSem = id => stats.ultima[id] != null ? Math.max(0, Math.floor((now - stats.ultima[id]) / 86400000)) : null;
   const sumido = a => a.ativo && (diasSem(a.id) == null || diasSem(a.id) >= DIAS_SUMIDO);
   let list = alunos.filter(a => a.nome.toLowerCase().includes(q.toLowerCase()));
-  if (filtro === "sumidos") list = list.filter(sumido).sort((a, b) => (diasSem(b.id) ?? 1e9) - (diasSem(a.id) ?? 1e9));else if (filtro === "pacote") list = list.filter(a => a.tipo === "pacote" && (a.saldo_pacote ?? 0) <= 2 && a.ativo);else if (filtro === "inativos") list = list.filter(a => !a.ativo);
+  if (filtro === "sumidos") list = list.filter(sumido).sort((a, b) => (diasSem(b.id) ?? 1e9) - (diasSem(a.id) ?? 1e9));else if (filtro === "pacote") list = list.filter(a => a.tipo === "pacote" && a.ativo);else if (filtro === "acabando") list = list.filter(a => a.tipo === "pacote" && (a.saldo_pacote ?? 0) <= 2 && a.ativo);else if (filtro === "inativos") list = list.filter(a => !a.ativo);
   const nSumidos = alunos.filter(sumido).length;
-  const FILTERS = [["todos", "Todos"], ["sumidos", `Sumidos${nSumidos ? ` ${nSumidos}` : ""}`], ["pacote", "Pacote acabando"], ["inativos", "Inativos"]];
+  const nPacote = alunos.filter(a => a.tipo === "pacote" && a.ativo).length;
+  const FILTERS = [["todos", "Todos"], ["pacote", `Pacote${nPacote ? ` ${nPacote}` : ""}`], ["sumidos", `Sumidos${nSumidos ? ` ${nSumidos}` : ""}`], ["acabando", "Pacote acabando"], ["inativos", "Inativos"]];
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1531,6 +1532,7 @@ function Cobrancas({
   reload
 }) {
   const [filtro, setFiltro] = useState("ativas");
+  const [edit, setEdit] = useState(null);
   const now = new Date();
   const grupos = {
     ativas: cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)),
@@ -1646,16 +1648,28 @@ function Cobrancas({
       onClick: () => setStatus(c, "paga", {
         data_pagamento: new Date().toISOString()
       })
-    }, "Recebi agora")));
+    }, "Recebi agora"), /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "ghost",
+      onClick: () => setEdit(c),
+      className: "ml-auto"
+    }, "Editar")));
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 px-1 leading-relaxed"
-  }, "Aula avulsa realizada entra como ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Voc\xEA aprova, envia pelo WhatsApp e marca ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."));
+  }, "Aula avulsa realizada entra como ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Voc\xEA aprova, envia pelo WhatsApp e marca ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
+    cobranca: edit,
+    onClose: () => setEdit(null),
+    onSaved: () => {
+      setEdit(null);
+      reload();
+    }
+  }));
 }
 function Despesas({
   despesas,
   reload
 }) {
-  const [modal, setModal] = useState(false);
+  const [modal, setModal] = useState(null); // true=novo | {despesa}
   const total = despesas.reduce((s, d) => s + Number(d.valor), 0);
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
@@ -1675,9 +1689,12 @@ function Despesas({
     className: "divide-y divide-black/5"
   }, despesas.length === 0 ? /*#__PURE__*/React.createElement("div", {
     className: "p-8"
-  }, /*#__PURE__*/React.createElement(Empty, null, "Nenhum gasto ainda.")) : despesas.map(d => /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Empty, null, "Nenhum gasto ainda.")) : despesas.map(d => /*#__PURE__*/React.createElement("button", {
     key: d.id,
-    className: "flex items-center gap-3 px-4 py-3"
+    onClick: () => setModal({
+      despesa: d
+    }),
+    className: "w-full flex items-center gap-3 px-4 py-3 text-left active:bg-slate-50"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex-1 min-w-0"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1686,31 +1703,26 @@ function Despesas({
     className: "text-xs text-slate-400"
   }, fmtData(d.data + "T12:00:00"), d.categoria && ` · ${d.categoria}`)), /*#__PURE__*/React.createElement("div", {
     className: "font-display font-semibold text-slate-700 num text-sm"
-  }, BRL(d.valor)), /*#__PURE__*/React.createElement("button", {
-    onClick: async () => {
-      if (confirm("Excluir gasto?")) {
-        await sb.from("despesas").delete().eq("id", d.id);
-        reload();
-      }
-    },
-    className: "text-slate-300 active:text-red-500 text-lg leading-none w-7 h-7"
-  }, "\xD7")))), modal && /*#__PURE__*/React.createElement(DespesaModal, {
-    onClose: () => setModal(false),
+  }, BRL(d.valor))))), modal && /*#__PURE__*/React.createElement(DespesaModal, {
+    despesa: modal === true ? null : modal.despesa,
+    onClose: () => setModal(null),
     onSaved: () => {
-      setModal(false);
+      setModal(null);
       reload();
     }
   }));
 }
 function DespesaModal({
+  despesa,
   onClose,
   onSaved
 }) {
+  const d0 = despesa || {};
   const [f, setF] = useState({
-    descricao: "",
-    valor: "",
-    data: toDateInput(new Date()),
-    categoria: ""
+    descricao: d0.descricao || "",
+    valor: d0.valor ?? "",
+    data: d0.data || toDateInput(new Date()),
+    categoria: d0.categoria || ""
   });
   const [busy, setBusy] = useState(false);
   const salvar = async () => {
@@ -1719,19 +1731,27 @@ function DespesaModal({
       return;
     }
     setBusy(true);
-    await sb.from("despesas").insert({
+    const payload = {
       descricao: f.descricao.trim(),
       valor: Number(f.valor),
       data: f.data,
       categoria: f.categoria.trim() || null
-    });
+    };
+    if (despesa) await sb.from("despesas").update(payload).eq("id", despesa.id);else await sb.from("despesas").insert(payload);
+    setBusy(false);
+    onSaved();
+  };
+  const excluir = async () => {
+    if (!confirm("Excluir gasto?")) return;
+    setBusy(true);
+    await sb.from("despesas").delete().eq("id", despesa.id);
     setBusy(false);
     onSaved();
   };
   return /*#__PURE__*/React.createElement(Sheet, {
     open: true,
     onClose: onClose,
-    title: "Novo gasto"
+    title: despesa ? "Editar gasto" : "Novo gasto"
   }, /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
   }, /*#__PURE__*/React.createElement(Field, {
@@ -1778,11 +1798,71 @@ function DespesaModal({
       categoria: e.target.value
     }),
     placeholder: "Quadra, Material\u2026"
-  })), /*#__PURE__*/React.createElement(Btn, {
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement(Btn, {
     onClick: salvar,
     disabled: busy,
-    className: "w-full"
-  }, "Salvar gasto")));
+    className: "flex-1"
+  }, "Salvar"), despesa && /*#__PURE__*/React.createElement(Btn, {
+    variant: "danger",
+    onClick: excluir,
+    disabled: busy
+  }, "Excluir"))));
+}
+function CobrancaModal({
+  cobranca,
+  onClose,
+  onSaved
+}) {
+  const [valor, setValor] = useState(cobranca.valor ?? "");
+  const [busy, setBusy] = useState(false);
+  const salvar = async () => {
+    setBusy(true);
+    await sb.from("cobrancas").update({
+      valor: Number(valor) || 0
+    }).eq("id", cobranca.id);
+    setBusy(false);
+    onSaved();
+  };
+  const excluir = async () => {
+    if (!confirm("Excluir esta cobrança?")) return;
+    setBusy(true);
+    await sb.from("cobrancas").delete().eq("id", cobranca.id);
+    setBusy(false);
+    onSaved();
+  };
+  return /*#__PURE__*/React.createElement(Sheet, {
+    open: true,
+    onClose: onClose,
+    title: "Editar cobran\xE7a"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-slate-500"
+  }, cobranca.aluno?.nome, cobranca.aula ? ` · ${fmtData(cobranca.aula.data_hora)} · ${MODS[cobranca.aula.modalidade]}` : ""), /*#__PURE__*/React.createElement(Field, {
+    label: "Valor (R$)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    step: "0.01",
+    className: inputCls,
+    value: valor,
+    onChange: e => setValor(e.target.value),
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: salvar,
+    disabled: busy,
+    className: "flex-1"
+  }, "Salvar"), /*#__PURE__*/React.createElement(Btn, {
+    variant: "danger",
+    onClick: excluir,
+    disabled: busy
+  }, "Excluir")), /*#__PURE__*/React.createElement("p", {
+    className: "text-[11px] text-slate-400"
+  }, "Pra mudar o aluno, a data ou a modalidade, edite a aula na Agenda.")));
 }
 function Ajustes({
   cfg,
