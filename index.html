@@ -1526,18 +1526,21 @@ const ST_COLOR = {
   nao_paga: "bg-red-50 text-red-700 ring-1 ring-red-200",
   cancelada: "bg-slate-100 text-slate-400"
 };
+const prazoPassou = (c, now) => c.data_prevista_envio && new Date(c.data_prevista_envio + "T23:59:59") <= now;
 function Cobrancas({
   cobrancas,
   cfg,
   reload
 }) {
-  const [filtro, setFiltro] = useState("ativas");
+  const [filtro, setFiltro] = useState("aberto");
   const [edit, setEdit] = useState(null);
   const now = new Date();
+  const dataAula = c => c.aula ? new Date(c.aula.data_hora).getTime() : 0;
   const grupos = {
-    ativas: cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)),
-    pagas: cobrancas.filter(c => c.status === "paga"),
-    outras: cobrancas.filter(c => ["nao_paga", "cancelada"].includes(c.status))
+    todas: [...cobrancas].sort((a, b) => dataAula(b) - dataAula(a)),
+    aberto: cobrancas.filter(c => ["pendente", "aprovada", "enviada", "nao_paga"].includes(c.status)).sort((a, b) => dataAula(a) - dataAula(b)),
+    cobrar: cobrancas.filter(c => c.status === "pendente" && prazoPassou(c, now)).sort((a, b) => dataAula(a) - dataAula(b)),
+    pagas: cobrancas.filter(c => c.status === "paga").sort((a, b) => new Date(b.data_pagamento || 0) - new Date(a.data_pagamento || 0))
   };
   const lista = grupos[filtro] || [];
   const aprovar = async c => {
@@ -1562,19 +1565,27 @@ function Cobrancas({
     }).eq("id", c.id);
     reload();
   };
+  const totalAberto = grupos.aberto.reduce((s, c) => s + Number(c.valor || 0), 0);
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex gap-2 text-xs font-semibold"
-  }, [["ativas", `Em aberto`, grupos.ativas.length], ["pagas", `Pagas`, grupos.pagas.length], ["outras", `Outras`, grupos.outras.length]].map(([k, v, n]) => /*#__PURE__*/React.createElement("button", {
-    key: k,
-    onClick: () => setFiltro(k),
-    className: `px-3 py-1.5 rounded-full transition ${filtro === k ? 'bg-court-700 text-white' : 'bg-white ring-1 ring-black/5 text-slate-500'}`
-  }, v, " ", n > 0 && /*#__PURE__*/React.createElement("span", {
-    className: filtro === k ? "text-white/70" : "text-slate-400"
-  }, n)))), lista.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+    className: "flex gap-2 text-xs font-semibold overflow-x-auto pb-1 -mx-1 px-1"
+  }, [["todas", `Todas`, grupos.todas.length], ["aberto", `Em aberto`, grupos.aberto.length], ["cobrar", `Cobrar`, grupos.cobrar.length], ["pagas", `Pagas`, grupos.pagas.length]].map(([k, v, n]) => {
+    const alerta = k === "cobrar" && n > 0;
+    return /*#__PURE__*/React.createElement("button", {
+      key: k,
+      onClick: () => setFiltro(k),
+      className: `shrink-0 px-3 py-1.5 rounded-full transition ${filtro === k ? alerta ? 'bg-clay text-white' : 'bg-court-700 text-white' : alerta ? 'bg-clay-50 text-clay ring-1 ring-clay/30' : 'bg-white ring-1 ring-black/5 text-slate-500'}`
+    }, v, " ", n > 0 && /*#__PURE__*/React.createElement("span", {
+      className: filtro === k ? "text-white/70" : alerta ? "text-clay" : "text-slate-400"
+    }, n));
+  })), filtro === "aberto" && grupos.aberto.length > 0 && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400 px-1"
+  }, "A receber: ", /*#__PURE__*/React.createElement("b", {
+    className: "text-slate-600 num"
+  }, BRL(totalAberto))), lista.length === 0 ? /*#__PURE__*/React.createElement(Card, {
     className: "p-8"
-  }, /*#__PURE__*/React.createElement(Empty, null, "Nada aqui.")) : /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Empty, null, filtro === "cobrar" ? "Ninguém pra cobrar agora. Tudo em dia." : filtro === "pagas" ? "Nenhuma aula paga ainda." : "Nada aqui.")) : /*#__PURE__*/React.createElement("div", {
     className: "space-y-2.5"
   }, lista.map(c => {
     const pronta = c.status === "pendente" && new Date(c.data_prevista_envio + "T23:59:59") <= now;
