@@ -1,0 +1,1803 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>João Steiner · Aulas</title>
+<meta name="theme-color" content="#0f241c">
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{ font-family:'Inter',system-ui,sans-serif; }
+  body{ background:#f3f4f0; margin:0; -webkit-tap-highlight-color:transparent; -webkit-font-smoothing:antialiased; }
+  .font-display{ font-family:'Space Grotesk',system-ui,sans-serif; }
+  .num{ font-family:'Space Grotesk',system-ui,sans-serif; font-variant-numeric:tabular-nums; }
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#cbd5c0; border-radius:8px; }
+  [data-slot]:hover .slot-add{ opacity:1; }
+  select{ background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 12px center; padding-right:38px; }
+  @keyframes sheet{ from{ transform:translateY(100%); } to{ transform:translateY(0); } }
+  @keyframes fade{ from{ opacity:0; } to{ opacity:1; } }
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; } }
+</style>
+<script>
+  window.tailwind = window.tailwind || {};
+  tailwind.config = { theme:{ extend:{
+    fontFamily:{ display:['Space Grotesk','system-ui','sans-serif'], sans:['Inter','system-ui','sans-serif'] },
+    colors:{
+      court:{ 50:'#ecfdf3',100:'#d1fadf',200:'#a6e9c3',400:'#34a56b',600:'#1a7a4a',700:'#15663e',800:'#0f4d30',900:'#0f241c' },
+      ball:'#d7f23a', 'ball-dark':'#5f7d00',
+      clay:'#c2552e', 'clay-50':'#fbeee8',
+      sand:'#f3f4f0'
+    } } } }
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+try {
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
+const {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef
+} = React;
+
+// ===================== CONFIG SUPABASE =====================
+const SUPABASE_URL = "https://hrzacjfltvdxwgwuudnn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_zk94LT0vIUHfTwa7t81A8w_JW4-fpgB";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const LOGIN_USER = "joao";
+const LOGIN_PASS = "steiner2026";
+
+// ===================== HELPERS =====================
+const MODS = {
+  tenis: "Tênis",
+  padel: "Padel",
+  beach_tennis: "Beach Tennis"
+};
+const MOD_DOT = {
+  tenis: "#15663e",
+  padel: "#2563eb",
+  beach_tennis: "#d97706"
+};
+const MOD_CHIP = {
+  tenis: "bg-court-50 text-court-800 ring-1 ring-court-200",
+  padel: "bg-blue-50 text-blue-800 ring-1 ring-blue-200",
+  beach_tennis: "bg-amber-50 text-amber-800 ring-1 ring-amber-200"
+};
+const BRL = v => (Number(v) || 0).toLocaleString("pt-BR", {
+  style: "currency",
+  currency: "BRL"
+});
+const BRL0 = v => (Number(v) || 0).toLocaleString("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+});
+const pad = n => String(n).padStart(2, "0");
+const DIAS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const MES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+const toDateInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const fmtData = iso => {
+  const d = new Date(iso);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+};
+const fmtDataHora = iso => {
+  const d = new Date(iso);
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const fmtHora = iso => {
+  const d = new Date(iso);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const diaLongo = d => `${DIAS[d.getDay()]}, ${d.getDate()} ${MES[d.getMonth()]}`;
+const startOfWeek = d => {
+  const x = new Date(d);
+  const day = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - day);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+const addDays = (d, n) => {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+};
+const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+const saud = () => {
+  const h = new Date().getHours();
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
+};
+function renderMsg(tpl, {
+  nome,
+  modalidade,
+  data,
+  valor,
+  pix_chave,
+  pix_nome
+}) {
+  return (tpl || "").replaceAll("{nome}", nome || "").replaceAll("{modalidade}", MODS[modalidade] || modalidade || "").replaceAll("{data}", data || "").replaceAll("{valor}", (Number(valor) || 0).toFixed(2).replace(".", ",")).replaceAll("{pix_chave}", pix_chave || "").replaceAll("{pix_nome}", pix_nome || "");
+}
+
+// ===================== UI PRIMITIVES =====================
+function Badge({
+  children,
+  className = ""
+}) {
+  return /*#__PURE__*/React.createElement("span", {
+    className: `inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${className}`
+  }, children);
+}
+function Btn({
+  children,
+  onClick,
+  variant = "primary",
+  size = "md",
+  className = "",
+  type = "button",
+  disabled
+}) {
+  const v = {
+    primary: "bg-court-700 active:bg-court-800 text-white shadow-sm shadow-court-700/20",
+    accent: "bg-ball text-court-900 active:brightness-95 shadow-sm shadow-ball/40",
+    soft: "bg-court-50 active:bg-court-100 text-court-800",
+    danger: "bg-red-50 active:bg-red-100 text-red-700",
+    dark: "bg-court-900 active:opacity-90 text-white",
+    outline: "border border-slate-300 active:bg-slate-50 text-slate-700 bg-white",
+    ghost: "text-slate-500 active:bg-slate-100"
+  }[variant];
+  const s = {
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-4 py-2.5 text-sm",
+    lg: "px-5 py-3 text-base"
+  }[size];
+  return /*#__PURE__*/React.createElement("button", {
+    type: type,
+    disabled: disabled,
+    onClick: onClick,
+    className: `inline-flex items-center justify-center gap-1.5 rounded-xl font-semibold transition-all disabled:opacity-40 disabled:pointer-events-none select-none ${v} ${s} ${className}`
+  }, children);
+}
+function Card({
+  children,
+  className = "",
+  onClick,
+  style
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: onClick,
+    style: style,
+    className: `bg-white rounded-2xl ring-1 ring-black/5 shadow-[0_1px_3px_rgba(15,36,28,0.06)] ${className}`
+  }, children);
+}
+function Field({
+  label,
+  children,
+  hint
+}) {
+  return /*#__PURE__*/React.createElement("label", {
+    className: "block"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "block text-xs font-semibold text-slate-500 mb-1.5"
+  }, label), children, hint && /*#__PURE__*/React.createElement("span", {
+    className: "block text-[11px] text-slate-400 mt-1"
+  }, hint));
+}
+const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-base text-slate-800 focus:outline-none focus:ring-2 focus:ring-court-600/30 focus:border-court-600 appearance-none";
+function Sheet({
+  open,
+  onClose,
+  title,
+  children
+}) {
+  if (!open) return null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-end sm:items-center justify-center",
+    onMouseDown: onClose
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute inset-0 bg-court-900/40 backdrop-blur-[2px] animate-[fade_.2s_ease]"
+  }), /*#__PURE__*/React.createElement("div", {
+    onMouseDown: e => e.stopPropagation(),
+    className: "relative bg-sand w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[92vh] overflow-y-auto animate-[sheet_.28s_cubic-bezier(.2,.8,.2,1)]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sticky top-0 z-10 bg-sand/95 backdrop-blur px-5 pt-4 pb-3 flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute left-1/2 -translate-x-1/2 top-2 w-10 h-1 rounded-full bg-slate-300 sm:hidden"
+  }), /*#__PURE__*/React.createElement("h3", {
+    className: "font-display font-bold text-lg text-court-900 mt-1"
+  }, title), /*#__PURE__*/React.createElement("button", {
+    onClick: onClose,
+    className: "w-9 h-9 rounded-full bg-black/5 active:bg-black/10 text-slate-500 text-xl leading-none flex items-center justify-center"
+  }, "\xD7")), /*#__PURE__*/React.createElement("div", {
+    className: "px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-1"
+  }, children)));
+}
+
+// ===================== APP =====================
+function App() {
+  const [authed, setAuthed] = useState(() => {
+    try {
+      return localStorage.getItem("js_auth") === "1";
+    } catch (e) {
+      return false;
+    }
+  });
+  const [tab, setTab] = useState("dash");
+  const [loading, setLoading] = useState(true);
+  const [alunos, setAlunos] = useState([]);
+  const [aulas, setAulas] = useState([]);
+  const [cobrancas, setCobrancas] = useState([]);
+  const [despesas, setDespesas] = useState([]);
+  const [cfg, setCfg] = useState(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    const [a, au, co, de, c] = await Promise.all([sb.from("alunos").select("*").order("nome"), sb.from("aulas").select("*, aluno:alunos(id,nome,tipo,telefone)").order("data_hora"), sb.from("cobrancas").select("*, aluno:alunos(id,nome,telefone), aula:aulas(id,data_hora,modalidade)").order("data_prevista_envio"), sb.from("despesas").select("*").order("data", {
+      ascending: false
+    }), sb.from("config").select("*").eq("id", 1).single()]);
+    setAlunos(a.data || []);
+    setAulas(au.data || []);
+    setCobrancas(co.data || []);
+    setDespesas(de.data || []);
+    setCfg(c.data || null);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    if (authed) load();
+  }, [authed, load]);
+  if (!authed) return /*#__PURE__*/React.createElement(Login, {
+    onOk: () => {
+      try {
+        localStorage.setItem("js_auth", "1");
+      } catch (e) {}
+      setAuthed(true);
+    }
+  });
+  const ctx = {
+    alunos,
+    aulas,
+    cobrancas,
+    despesas,
+    cfg,
+    reload: load
+  };
+  const NAV = [{
+    id: "dash",
+    label: "Início",
+    icon: IcHome
+  }, {
+    id: "agenda",
+    label: "Agenda",
+    icon: IcCal
+  }, {
+    id: "alunos",
+    label: "Alunos",
+    icon: IcBall
+  }, {
+    id: "fin",
+    label: "Financeiro",
+    icon: IcMoney
+  }];
+  const sair = () => {
+    try {
+      localStorage.removeItem("js_auth");
+    } catch (e) {}
+    location.reload();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen flex flex-col sm:flex-row"
+  }, /*#__PURE__*/React.createElement("aside", {
+    className: "hidden sm:flex flex-col w-64 shrink-0 bg-court-900 text-white p-5 gap-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "px-1 py-4 mb-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-xl font-bold leading-tight"
+  }, "Jo\xE3o Steiner"), /*#__PURE__*/React.createElement("div", {
+    className: "text-ball text-xs mt-1 font-semibold tracking-wide"
+  }, "T\xEAnis \xB7 Padel \xB7 Beach Tennis")), NAV.map(n => {
+    const I = n.icon;
+    return /*#__PURE__*/React.createElement("button", {
+      key: n.id,
+      onClick: () => setTab(n.id),
+      className: `flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-semibold transition ${tab === n.id ? 'bg-white/10 text-white' : 'text-white/55 hover:bg-white/5'}`
+    }, /*#__PURE__*/React.createElement(I, {
+      className: "w-5 h-5",
+      active: tab === n.id
+    }), n.label);
+  }), /*#__PURE__*/React.createElement("button", {
+    onClick: sair,
+    className: "mt-auto flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium text-white/40 hover:bg-white/5"
+  }, /*#__PURE__*/React.createElement(IcOut, {
+    className: "w-5 h-5"
+  }), "Sair")), /*#__PURE__*/React.createElement("header", {
+    className: "sm:hidden sticky top-0 z-30 bg-court-900 text-white px-5 pt-[calc(.75rem+env(safe-area-inset-top))] pb-3 flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-display font-bold text-base"
+  }, "Jo\xE3o Steiner"), /*#__PURE__*/React.createElement("button", {
+    onClick: sair,
+    className: "text-xs text-white/55 flex items-center gap-1"
+  }, /*#__PURE__*/React.createElement(IcOut, {
+    className: "w-4 h-4"
+  }), "Sair")), /*#__PURE__*/React.createElement("main", {
+    className: "flex-1 min-w-0 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-8"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "max-w-4xl mx-auto px-4 pt-5 sm:px-8 sm:pt-8"
+  }, loading ? /*#__PURE__*/React.createElement(Skeleton, null) : tab === "dash" ? /*#__PURE__*/React.createElement(Dashboard, _extends({}, ctx, {
+    go: setTab
+  })) : tab === "agenda" ? /*#__PURE__*/React.createElement(Agenda, ctx) : tab === "alunos" ? /*#__PURE__*/React.createElement(Alunos, ctx) : /*#__PURE__*/React.createElement(Financeiro, ctx))), /*#__PURE__*/React.createElement("nav", {
+    className: "sm:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-black/5 grid grid-cols-4 pb-[env(safe-area-inset-bottom)]"
+  }, NAV.map(n => {
+    const I = n.icon;
+    const on = tab === n.id;
+    return /*#__PURE__*/React.createElement("button", {
+      key: n.id,
+      onClick: () => setTab(n.id),
+      className: "relative flex flex-col items-center gap-1 pt-2.5 pb-2"
+    }, on && /*#__PURE__*/React.createElement("span", {
+      className: "absolute top-0 w-10 h-1 rounded-full bg-ball"
+    }), /*#__PURE__*/React.createElement(I, {
+      className: `w-6 h-6 transition ${on ? 'text-court-700' : 'text-slate-400'}`,
+      active: on
+    }), /*#__PURE__*/React.createElement("span", {
+      className: `text-[11px] font-semibold ${on ? 'text-court-700' : 'text-slate-400'}`
+    }, n.label));
+  })));
+}
+function Skeleton() {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3 animate-pulse"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "h-7 w-40 bg-black/5 rounded-lg"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "h-28 bg-black/5 rounded-2xl"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "h-20 bg-black/5 rounded-2xl"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "h-20 bg-black/5 rounded-2xl"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "h-20 bg-black/5 rounded-2xl"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "h-40 bg-black/5 rounded-2xl"
+  }));
+}
+
+// ===================== ICONS (inline svg, herdam currentColor) =====================
+function IcHome({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M3 10.5 12 3l9 7.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M5 9.5V21h14V9.5"
+  }));
+}
+function IcCal({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "3",
+    y: "4.5",
+    width: "18",
+    height: "16.5",
+    rx: "2.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M3 9h18M8 2.5v4M16 2.5v4"
+  }));
+}
+function IcBall({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "9"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M4.5 6.5c3.5 2 3.5 9 0 11M19.5 6.5c-3.5 2-3.5 9 0 11"
+  }));
+}
+function IcMoney({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("rect", {
+    x: "2.5",
+    y: "6",
+    width: "19",
+    height: "12",
+    rx: "2.5"
+  }), /*#__PURE__*/React.createElement("circle", {
+    cx: "12",
+    cy: "12",
+    r: "2.5"
+  }), /*#__PURE__*/React.createElement("path", {
+    d: "M6 9.5v5M18 9.5v5"
+  }));
+}
+function IcOut({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l-5-5 5-5M5 12h11"
+  }));
+}
+function IcPlus({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.2",
+    strokeLinecap: "round"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M12 5v14M5 12h14"
+  }));
+}
+function IcChev({
+  className,
+  dir
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2.4",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    style: {
+      transform: dir === "l" ? "rotate(0)" : "rotate(180deg)"
+    }
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M15 6l-6 6 6 6"
+  }));
+}
+function IcWhats({
+  className
+}) {
+  return /*#__PURE__*/React.createElement("svg", {
+    className: className,
+    viewBox: "0 0 24 24",
+    fill: "currentColor"
+  }, /*#__PURE__*/React.createElement("path", {
+    d: "M.5 23.5l1.65-6a11.3 11.3 0 1 1 4.2 4.1L.5 23.5ZM6.6 19.4l.37.22a9.4 9.4 0 1 0-3.2-3.16l.24.38-.92 3.35 3.5-.79ZM17.3 14.1c-.23-.12-1.37-.68-1.58-.76-.21-.08-.37-.12-.52.12-.15.23-.6.76-.73.91-.14.15-.27.17-.5.06-.23-.12-.98-.36-1.86-1.15-.69-.61-1.15-1.37-1.29-1.6-.14-.23-.01-.35.1-.47.1-.1.23-.27.34-.4.12-.14.15-.23.23-.39.08-.15.04-.29-.02-.4-.06-.12-.52-1.25-.71-1.71-.19-.45-.38-.39-.52-.4h-.44c-.15 0-.4.06-.6.29-.21.23-.8.78-.8 1.9 0 1.12.82 2.2.93 2.36.12.15 1.6 2.44 3.87 3.42.54.23.96.37 1.29.48.54.17 1.03.15 1.42.09.43-.06 1.37-.56 1.56-1.1.19-.54.19-1 .14-1.1-.06-.1-.21-.16-.44-.28Z"
+  }));
+}
+
+// ===================== LOGIN =====================
+function Login({
+  onOk
+}) {
+  const [u, setU] = useState("");
+  const [p, setP] = useState("");
+  const [err, setErr] = useState(false);
+  const submit = e => {
+    e.preventDefault();
+    if (u.trim() === LOGIN_USER && p === LOGIN_PASS) onOk();else setErr(true);
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "min-h-screen flex items-center justify-center p-5 bg-court-900 relative overflow-hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute -top-24 -right-16 w-72 h-72 rounded-full bg-court-700/40 blur-2xl"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-ball/10 blur-2xl"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "relative w-full max-w-sm"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-center mb-7"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "inline-flex w-14 h-14 rounded-2xl bg-ball items-center justify-center mb-4"
+  }, /*#__PURE__*/React.createElement(IcBall, {
+    className: "w-8 h-8 text-court-900"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-2xl font-bold text-white"
+  }, "Jo\xE3o Steiner"), /*#__PURE__*/React.createElement("div", {
+    className: "text-white/50 text-sm mt-1"
+  }, "Agenda, alunos e cobran\xE7as")), /*#__PURE__*/React.createElement("form", {
+    onSubmit: submit,
+    className: "bg-sand rounded-3xl p-6 space-y-4 shadow-2xl"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Usu\xE1rio"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: u,
+    onChange: e => {
+      setU(e.target.value);
+      setErr(false);
+    },
+    autoCapitalize: "none",
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Senha"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "password",
+    className: inputCls,
+    value: p,
+    onChange: e => {
+      setP(e.target.value);
+      setErr(false);
+    }
+  })), err && /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-red-600 font-medium"
+  }, "Usu\xE1rio ou senha incorretos."), /*#__PURE__*/React.createElement(Btn, {
+    type: "submit",
+    variant: "accent",
+    size: "lg",
+    className: "w-full"
+  }, "Entrar"))));
+}
+
+// ===================== DASHBOARD =====================
+function Dashboard({
+  alunos,
+  aulas,
+  cobrancas,
+  despesas,
+  cfg,
+  go
+}) {
+  const now = new Date();
+  const mesIni = new Date(now.getFullYear(), now.getMonth(), 1);
+  const aReceber = cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)).reduce((s, c) => s + Number(c.valor), 0);
+  const nAReceber = cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)).length;
+  const recebidoMes = cobrancas.filter(c => c.status === "paga" && c.data_pagamento && new Date(c.data_pagamento) >= mesIni).reduce((s, c) => s + Number(c.valor), 0);
+  const gastoMes = despesas.filter(d => new Date(d.data + "T12:00:00") >= mesIni).reduce((s, d) => s + Number(d.valor), 0);
+  const saldoMes = recebidoMes - gastoMes;
+  const hoje = aulas.filter(a => sameDay(new Date(a.data_hora), now) && a.status !== "cancelada").sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+  const proximas = aulas.filter(a => a.status === "agendada" && new Date(a.data_hora) > now).slice(0, 4);
+  const prontas = cobrancas.filter(c => c.status === "pendente" && new Date(c.data_prevista_envio + "T23:59:59") <= now);
+  const renovar = alunos.filter(a => a.tipo === "pacote" && (a.saldo_pacote ?? 0) <= 2 && a.ativo);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-5"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-slate-400 text-sm font-medium capitalize"
+  }, diaLongo(now)), /*#__PURE__*/React.createElement("h1", {
+    className: "font-display text-2xl font-bold text-court-900"
+  }, saud(), ", Jo\xE3o")), /*#__PURE__*/React.createElement(Card, {
+    className: "p-5 ring-0 relative overflow-hidden",
+    style: {
+      background: "#0f241c"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "absolute -right-8 -top-8 w-32 h-32 rounded-full bg-court-700/40"
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "relative"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-white/60 text-sm font-medium"
+  }, "A receber"), /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-4xl font-bold text-white mt-1 num"
+  }, BRL(aReceber)), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 mt-3"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-white/60 text-xs"
+  }, nAReceber, " cobran\xE7a", nAReceber === 1 ? "" : "s", " em aberto"), nAReceber > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go("fin"),
+    className: "text-ball text-xs font-semibold"
+  }, "Ver fila \u2192")))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-3 gap-3"
+  }, /*#__PURE__*/React.createElement(MiniStat, {
+    label: "Recebido",
+    sub: "no m\xEAs",
+    value: BRL0(recebidoMes),
+    tone: "text-court-700"
+  }), /*#__PURE__*/React.createElement(MiniStat, {
+    label: "Gastos",
+    sub: "no m\xEAs",
+    value: BRL0(gastoMes),
+    tone: "text-slate-700"
+  }), /*#__PURE__*/React.createElement(MiniStat, {
+    label: "Saldo",
+    sub: "no m\xEAs",
+    value: BRL0(saldoMes),
+    tone: saldoMes >= 0 ? 'text-court-700' : 'text-red-600'
+  })), (prontas.length > 0 || renovar.length > 0) && /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2.5"
+  }, prontas.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go("fin"),
+    className: "w-full text-left"
+  }, /*#__PURE__*/React.createElement(Card, {
+    className: "p-4 flex items-center gap-3 ring-clay/20",
+    style: {
+      background: "#fbeee8"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-9 h-9 rounded-full bg-clay/15 text-clay flex items-center justify-center shrink-0"
+  }, /*#__PURE__*/React.createElement(IcMoney, {
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0 flex-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-semibold text-clay text-sm"
+  }, prontas.length, " cobran\xE7a", prontas.length === 1 ? "" : "s", " pronta", prontas.length === 1 ? "" : "s", " pra enviar"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-500"
+  }, "Passaram os ", cfg?.dias_cobranca || 7, " dias. Revise e aprove.")), /*#__PURE__*/React.createElement(IcChev, {
+    className: "w-5 h-5 text-slate-300",
+    dir: "r"
+  }))), renovar.length > 0 && /*#__PURE__*/React.createElement(Card, {
+    className: "p-4 flex items-center gap-3 ring-amber-200",
+    style: {
+      background: "#fffbeb"
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-9 h-9 rounded-full bg-amber-200/60 text-amber-700 flex items-center justify-center shrink-0"
+  }, /*#__PURE__*/React.createElement(IcBall, {
+    className: "w-5 h-5"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-semibold text-amber-800 text-sm"
+  }, "Pacote acabando"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-600 truncate"
+  }, renovar.map(a => `${a.nome.split(" ")[0]} (${a.saldo_pacote})`).join(" · "))))), /*#__PURE__*/React.createElement(Section, {
+    title: "Aulas de hoje",
+    count: hoje.length
+  }, hoje.length === 0 ? /*#__PURE__*/React.createElement(Empty, null, "Nenhuma aula hoje. Dia de descanso.") : /*#__PURE__*/React.createElement("div", {
+    className: "divide-y divide-black/5"
+  }, hoje.map(a => /*#__PURE__*/React.createElement(AulaRow, {
+    key: a.id,
+    a: a
+  })))), proximas.length > 0 && /*#__PURE__*/React.createElement(Section, {
+    title: "Pr\xF3ximas aulas"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "divide-y divide-black/5"
+  }, proximas.map(a => /*#__PURE__*/React.createElement(AulaRow, {
+    key: a.id,
+    a: a,
+    showDate: true
+  })))));
+}
+function MiniStat({
+  label,
+  sub,
+  value,
+  tone
+}) {
+  return /*#__PURE__*/React.createElement(Card, {
+    className: "p-3.5"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-slate-400"
+  }, label), /*#__PURE__*/React.createElement("div", {
+    className: `font-display text-base font-bold mt-1.5 num leading-none whitespace-nowrap ${tone}`
+  }, value), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] text-slate-400 mt-1"
+  }, sub));
+}
+function Section({
+  title,
+  count,
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 mb-2 px-1"
+  }, /*#__PURE__*/React.createElement("h2", {
+    className: "font-display font-bold text-court-900"
+  }, title), count != null && /*#__PURE__*/React.createElement("span", {
+    className: "text-xs font-semibold text-slate-400"
+  }, count)), /*#__PURE__*/React.createElement(Card, {
+    className: "p-2"
+  }, children));
+}
+function Empty({
+  children
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "text-sm text-slate-400 py-6 text-center px-4"
+  }, children);
+}
+function AulaRow({
+  a,
+  showDate
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3 px-2.5 py-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-center shrink-0 w-12"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-display font-bold text-court-800 num leading-none"
+  }, fmtHora(a.data_hora)), showDate && /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] text-slate-400 mt-1 num"
+  }, fmtData(a.data_hora))), /*#__PURE__*/React.createElement("span", {
+    className: "w-1.5 h-9 rounded-full shrink-0",
+    style: {
+      background: MOD_DOT[a.modalidade]
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-semibold text-slate-800 truncate text-[15px]"
+  }, a.aluno?.nome || "—"), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400"
+  }, MODS[a.modalidade])), /*#__PURE__*/React.createElement("div", {
+    className: "font-display font-semibold text-slate-500 num text-sm"
+  }, BRL0(a.valor)));
+}
+
+// ===================== AGENDA =====================
+const HORA_INI = 7,
+  HORA_FIM = 22;
+function Agenda({
+  alunos,
+  aulas,
+  cfg,
+  reload
+}) {
+  const [anchor, setAnchor] = useState(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [modal, setModal] = useState(null);
+  const horas = useMemo(() => Array.from({
+    length: HORA_FIM - HORA_INI
+  }, (_, i) => HORA_INI + i), []);
+
+  // index aulas por "YYYY-MM-DD_hora"
+  const idx = useMemo(() => {
+    const m = {};
+    aulas.forEach(a => {
+      const d = new Date(a.data_hora);
+      m[`${toDateInput(d)}_${d.getHours()}`] = a;
+    });
+    return m;
+  }, [aulas]);
+  const open = payload => setModal(payload);
+  const close = () => setModal(null);
+  const saved = () => {
+    setModal(null);
+    reload();
+  };
+
+  // ----- desktop week -----
+  const wkStart = startOfWeek(anchor);
+  const dias = Array.from({
+    length: 7
+  }, (_, i) => addDays(wkStart, i));
+  const nAnchor = sameDay(anchor, new Date());
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "font-display text-2xl font-bold text-court-900"
+  }, "Agenda"), /*#__PURE__*/React.createElement(Btn, {
+    variant: "accent",
+    size: "sm",
+    onClick: () => {
+      const d = new Date(anchor);
+      d.setHours(10, 0, 0, 0);
+      open({
+        novaDate: d
+      });
+    }
+  }, /*#__PURE__*/React.createElement(IcPlus, {
+    className: "w-4 h-4"
+  }), "Aula")), /*#__PURE__*/React.createElement("div", {
+    className: "sm:hidden"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between mb-3"
+  }, /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAnchor(addDays(anchor, -1)),
+    className: "w-10 h-10 rounded-full bg-white ring-1 ring-black/5 flex items-center justify-center text-slate-500 active:bg-slate-50"
+  }, /*#__PURE__*/React.createElement(IcChev, {
+    className: "w-5 h-5",
+    dir: "l"
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "text-center"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-display font-bold text-court-900 capitalize"
+  }, diaLongo(anchor)), !nAnchor && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      setAnchor(d);
+    },
+    className: "text-xs text-court-700 font-semibold"
+  }, "Voltar pra hoje"), nAnchor && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-ball-dark font-semibold"
+  }, "Hoje")), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setAnchor(addDays(anchor, 1)),
+    className: "w-10 h-10 rounded-full bg-white ring-1 ring-black/5 flex items-center justify-center text-slate-500 active:bg-slate-50"
+  }, /*#__PURE__*/React.createElement(IcChev, {
+    className: "w-5 h-5",
+    dir: "r"
+  }))), /*#__PURE__*/React.createElement(Card, {
+    className: "p-1.5 divide-y divide-black/5"
+  }, horas.map(h => {
+    const a = idx[`${toDateInput(anchor)}_${h}`];
+    return /*#__PURE__*/React.createElement("div", {
+      key: h,
+      className: "flex items-stretch gap-2.5 py-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "w-11 shrink-0 pt-2.5 text-right"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "font-display text-xs font-semibold text-slate-400 num"
+    }, pad(h), ":00")), a ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => open({
+        aula: a
+      }),
+      className: `flex-1 min-w-0 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left active:brightness-[.98] ${a.status === 'cancelada' ? 'bg-slate-100' : a.status === 'realizada' ? 'bg-court-700' : 'bg-court-50 ring-1 ring-court-200'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: `font-semibold truncate text-[15px] ${a.status === 'cancelada' ? 'text-slate-400 line-through' : a.status === 'realizada' ? 'text-white' : 'text-court-900'}`
+    }, a.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+      className: `text-xs truncate ${a.status === 'realizada' ? 'text-white/70' : 'text-slate-500'}`
+    }, MODS[a.modalidade], " \xB7 ", BRL0(a.valor), a.status === 'realizada' ? ' · feita' : ''))) : /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        const d = new Date(anchor);
+        d.setHours(h, 0, 0, 0);
+        open({
+          novaDate: d
+        });
+      },
+      className: "flex-1 flex items-center rounded-xl px-3 py-2.5 text-slate-300 active:bg-slate-50 border border-dashed border-slate-200"
+    }, /*#__PURE__*/React.createElement(IcPlus, {
+      className: "w-4 h-4"
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "text-xs ml-1.5 text-slate-400"
+    }, "Livre")));
+  }))), /*#__PURE__*/React.createElement("div", {
+    className: "hidden sm:block"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 mb-3"
+  }, /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => setAnchor(addDays(anchor, -7))
+  }, /*#__PURE__*/React.createElement(IcChev, {
+    className: "w-4 h-4",
+    dir: "l"
+  })), /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      setAnchor(d);
+    }
+  }, "Hoje"), /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => setAnchor(addDays(anchor, 7))
+  }, /*#__PURE__*/React.createElement(IcChev, {
+    className: "w-4 h-4",
+    dir: "r"
+  })), /*#__PURE__*/React.createElement("span", {
+    className: "text-sm font-semibold text-slate-500 ml-1 num"
+  }, fmtData(dias[0]), " \u2013 ", fmtData(dias[6]))), /*#__PURE__*/React.createElement(Card, {
+    className: "overflow-x-auto"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-[680px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid",
+    style: {
+      gridTemplateColumns: "52px repeat(7,1fr)"
+    }
+  }, /*#__PURE__*/React.createElement("div", null), dias.map((d, i) => {
+    const t = sameDay(d, new Date());
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: `py-2.5 text-center border-l border-black/5 ${t ? 'bg-court-50' : ''}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "text-[11px] font-semibold text-slate-400"
+    }, DIAS[d.getDay()]), /*#__PURE__*/React.createElement("div", {
+      className: `font-display text-sm font-bold num ${t ? 'text-court-700' : 'text-slate-700'}`
+    }, pad(d.getDate())));
+  })), horas.map(h => /*#__PURE__*/React.createElement("div", {
+    key: h,
+    className: "grid border-t border-black/5",
+    style: {
+      gridTemplateColumns: "52px repeat(7,1fr)"
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] text-slate-400 font-semibold text-right pr-2 pt-1.5 num"
+  }, pad(h), ":00"), dias.map((d, i) => {
+    const a = idx[`${toDateInput(d)}_${h}`];
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      "data-slot": true,
+      className: "relative border-l border-black/5 h-14 p-1"
+    }, a ? /*#__PURE__*/React.createElement("button", {
+      onClick: () => open({
+        aula: a
+      }),
+      className: `w-full h-full rounded-lg px-1.5 py-1 text-left text-[11px] leading-tight overflow-hidden ${a.status === 'cancelada' ? 'bg-slate-100 text-slate-400 line-through' : a.status === 'realizada' ? 'bg-court-700 text-white' : 'bg-court-50 text-court-800 ring-1 ring-court-200'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold truncate"
+    }, a.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+      className: "truncate opacity-80"
+    }, MODS[a.modalidade])) : /*#__PURE__*/React.createElement("button", {
+      onClick: () => {
+        const dt = new Date(d);
+        dt.setHours(h, 0, 0, 0);
+        open({
+          novaDate: dt
+        });
+      },
+      className: "slot-add opacity-0 w-full h-full rounded-lg text-court-400 hover:bg-court-50 flex items-center justify-center"
+    }, /*#__PURE__*/React.createElement(IcPlus, {
+      className: "w-4 h-4"
+    })));
+  })))))), modal && /*#__PURE__*/React.createElement(AulaModal, {
+    modal: modal,
+    alunos: alunos,
+    cfg: cfg,
+    onClose: close,
+    onSaved: saved
+  }));
+}
+function AulaModal({
+  modal,
+  alunos,
+  cfg,
+  onClose,
+  onSaved
+}) {
+  const editing = !!modal.aula;
+  const a = modal.aula;
+  const [alunoId, setAlunoId] = useState(a?.aluno_id || "");
+  const [data, setData] = useState(a ? toDateInput(new Date(a.data_hora)) : toDateInput(modal.novaDate));
+  const [hora, setHora] = useState(a ? pad(new Date(a.data_hora).getHours()) : pad(modal.novaDate.getHours()));
+  const [modalidade, setModalidade] = useState(a?.modalidade || "");
+  const [valor, setValor] = useState(a?.valor ?? "");
+  const [busy, setBusy] = useState(false);
+  const alunoSel = alunos.find(x => x.id === alunoId);
+  useEffect(() => {
+    if (!editing && alunoSel) {
+      if (alunoSel.modalidade) setModalidade(alunoSel.modalidade);
+      if (alunoSel.valor_padrao != null && valor === "") setValor(alunoSel.valor_padrao);
+    }
+  }, [alunoId]);
+  const salvar = async () => {
+    if (!alunoId || !modalidade) {
+      alert("Escolha o aluno e a modalidade.");
+      return;
+    }
+    setBusy(true);
+    const dh = new Date(`${data}T${hora}:00`);
+    const payload = {
+      aluno_id: alunoId,
+      data_hora: dh.toISOString(),
+      modalidade,
+      valor: Number(valor) || 0
+    };
+    if (editing) await sb.from("aulas").update(payload).eq("id", a.id);else await sb.from("aulas").insert(payload);
+    setBusy(false);
+    onSaved();
+  };
+  const marcarRealizada = async () => {
+    setBusy(true);
+    await sb.from("aulas").update({
+      status: "realizada"
+    }).eq("id", a.id);
+    if (alunoSel?.tipo === "avulso") {
+      const {
+        data: existe
+      } = await sb.from("cobrancas").select("id").eq("aula_id", a.id).maybeSingle();
+      if (!existe) {
+        const dias = cfg?.dias_cobranca || 7;
+        const prevista = addDays(new Date(a.data_hora), dias);
+        await sb.from("cobrancas").insert({
+          aula_id: a.id,
+          aluno_id: a.aluno_id,
+          valor: Number(a.valor) || 0,
+          status: "pendente",
+          data_prevista_envio: toDateInput(prevista)
+        });
+      }
+    }
+    setBusy(false);
+    onSaved();
+  };
+  const setStatus = async st => {
+    setBusy(true);
+    await sb.from("aulas").update({
+      status: st
+    }).eq("id", a.id);
+    setBusy(false);
+    onSaved();
+  };
+  const excluir = async () => {
+    if (!confirm("Excluir esta aula?")) return;
+    setBusy(true);
+    await sb.from("aulas").delete().eq("id", a.id);
+    setBusy(false);
+    onSaved();
+  };
+  return /*#__PURE__*/React.createElement(Sheet, {
+    open: true,
+    onClose: onClose,
+    title: editing ? "Aula" : "Nova aula"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Aluno"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    value: alunoId,
+    onChange: e => setAlunoId(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "Selecione\u2026"), alunos.filter(x => x.ativo).map(x => /*#__PURE__*/React.createElement("option", {
+    key: x.id,
+    value: x.id
+  }, x.nome, x.tipo === "pacote" ? " · pacote" : "")))), alunoSel?.tipo === "pacote" && /*#__PURE__*/React.createElement("div", {
+    className: "text-xs bg-amber-50 text-amber-800 rounded-xl px-3 py-2.5 ring-1 ring-amber-200"
+  }, "Aluno de pacote: n\xE3o gera cobran\xE7a autom\xE1tica. Saldo: ", /*#__PURE__*/React.createElement("b", null, alunoSel.saldo_pacote, " aula(s)"), "."), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Data"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    className: inputCls,
+    value: data,
+    onChange: e => setData(e.target.value)
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Hora"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    value: hora,
+    onChange: e => setHora(e.target.value)
+  }, Array.from({
+    length: HORA_FIM - HORA_INI
+  }, (_, i) => pad(HORA_INI + i)).map(h => /*#__PURE__*/React.createElement("option", {
+    key: h,
+    value: h
+  }, h, ":00"))))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Modalidade"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    value: modalidade,
+    onChange: e => setModalidade(e.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014"), Object.entries(MODS).map(([k, v]) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: k
+  }, v)))), /*#__PURE__*/React.createElement(Field, {
+    label: "Valor (R$)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    step: "0.01",
+    className: inputCls,
+    value: valor,
+    onChange: e => setValor(e.target.value)
+  }))), editing && /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-2 text-sm"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-400 font-medium"
+  }, "Status:"), /*#__PURE__*/React.createElement(Badge, {
+    className: a.status === 'realizada' ? 'bg-court-700 text-white' : a.status === 'cancelada' ? 'bg-slate-200 text-slate-500' : 'bg-court-50 text-court-800 ring-1 ring-court-200'
+  }, a.status)), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2 pt-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: salvar,
+    disabled: busy,
+    className: "flex-1"
+  }, editing ? "Salvar" : "Agendar aula"), editing && a.status !== "realizada" && /*#__PURE__*/React.createElement(Btn, {
+    variant: "accent",
+    onClick: marcarRealizada,
+    disabled: busy,
+    className: "flex-1"
+  }, "\u2713 Marcar feita")), editing && /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, a.status === "agendada" && /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => setStatus("cancelada"),
+    disabled: busy,
+    className: "flex-1"
+  }, "Cancelar aula"), a.status === "realizada" && /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => setStatus("agendada"),
+    disabled: busy,
+    className: "flex-1"
+  }, "Reverter"), a.status === "cancelada" && /*#__PURE__*/React.createElement(Btn, {
+    variant: "outline",
+    size: "sm",
+    onClick: () => setStatus("agendada"),
+    disabled: busy,
+    className: "flex-1"
+  }, "Reativar"), /*#__PURE__*/React.createElement(Btn, {
+    variant: "danger",
+    size: "sm",
+    onClick: excluir,
+    disabled: busy
+  }, "Excluir")))));
+}
+
+// ===================== ALUNOS =====================
+function Alunos({
+  alunos,
+  aulas,
+  reload
+}) {
+  const [q, setQ] = useState("");
+  const [modal, setModal] = useState(null);
+  const feitasPorAluno = useMemo(() => {
+    const m = {};
+    aulas.forEach(a => {
+      if (a.status === "realizada") m[a.aluno_id] = (m[a.aluno_id] || 0) + 1;
+    });
+    return m;
+  }, [aulas]);
+  const list = alunos.filter(a => a.nome.toLowerCase().includes(q.toLowerCase()));
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "font-display text-2xl font-bold text-court-900"
+  }, "Alunos ", /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-300 font-semibold text-lg"
+  }, alunos.length)), /*#__PURE__*/React.createElement(Btn, {
+    variant: "accent",
+    size: "sm",
+    onClick: () => setModal("novo")
+  }, /*#__PURE__*/React.createElement(IcPlus, {
+    className: "w-4 h-4"
+  }), "Novo")), /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    placeholder: "Buscar aluno\u2026",
+    value: q,
+    onChange: e => setQ(e.target.value)
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "grid sm:grid-cols-2 gap-3"
+  }, list.map(a => {
+    const ini = a.nome.trim().slice(0, 1).toUpperCase();
+    return /*#__PURE__*/React.createElement(Card, {
+      key: a.id,
+      className: "p-3.5 flex items-center gap-3 active:bg-slate-50",
+      onClick: () => setModal({
+        aluno: a
+      })
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "w-11 h-11 rounded-full shrink-0 flex items-center justify-center font-display font-bold text-white",
+      style: {
+        background: MOD_DOT[a.modalidade] || "#64748b"
+      }
+    }, ini), /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0 flex-1"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold text-slate-800 truncate flex items-center gap-1.5"
+    }, a.nome, " ", !a.ativo && /*#__PURE__*/React.createElement("span", {
+      className: "text-[10px] text-slate-400 font-normal"
+    }, "(inativo)")), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-slate-400 mt-0.5 flex items-center gap-2"
+    }, /*#__PURE__*/React.createElement("span", null, a.modalidade ? MODS[a.modalidade] : "—"), a.tipo === "pacote" && /*#__PURE__*/React.createElement("span", {
+      className: "text-amber-600 font-semibold"
+    }, "pacote \xB7 ", a.saldo_pacote))), /*#__PURE__*/React.createElement("div", {
+      className: "text-right shrink-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-display text-xl font-bold text-court-700 num leading-none"
+    }, feitasPorAluno[a.id] || 0), /*#__PURE__*/React.createElement("div", {
+      className: "text-[9px] text-slate-400 font-semibold mt-1"
+    }, "AULAS")));
+  }), list.length === 0 && /*#__PURE__*/React.createElement(Empty, null, "Nenhum aluno encontrado.")), modal && /*#__PURE__*/React.createElement(AlunoModal, {
+    aluno: modal === "novo" ? null : modal.aluno,
+    aulas: aulas,
+    onClose: () => setModal(null),
+    onSaved: () => {
+      setModal(null);
+      reload();
+    }
+  }));
+}
+function AlunoModal({
+  aluno,
+  aulas,
+  onClose,
+  onSaved
+}) {
+  const e = aluno || {};
+  const [f, setF] = useState({
+    nome: e.nome || "",
+    telefone: e.telefone || "",
+    modalidade: e.modalidade || "",
+    tipo: e.tipo || "avulso",
+    valor_padrao: e.valor_padrao ?? "",
+    saldo_pacote: e.saldo_pacote ?? 0,
+    observacoes: e.observacoes || "",
+    ativo: e.ativo ?? true
+  });
+  const [busy, setBusy] = useState(false);
+  const up = (k, v) => setF(s => ({
+    ...s,
+    [k]: v
+  }));
+  const hist = aluno ? aulas.filter(a => a.aluno_id === aluno.id).sort((a, b) => new Date(b.data_hora) - new Date(a.data_hora)) : [];
+  const salvar = async () => {
+    if (!f.nome.trim()) {
+      alert("Nome é obrigatório.");
+      return;
+    }
+    setBusy(true);
+    const payload = {
+      nome: f.nome.trim(),
+      telefone: f.telefone.trim() || null,
+      modalidade: f.modalidade || null,
+      tipo: f.tipo,
+      valor_padrao: f.valor_padrao === "" ? null : Number(f.valor_padrao),
+      saldo_pacote: Number(f.saldo_pacote) || 0,
+      observacoes: f.observacoes.trim() || null,
+      ativo: f.ativo
+    };
+    if (aluno) await sb.from("alunos").update(payload).eq("id", aluno.id);else await sb.from("alunos").insert(payload);
+    setBusy(false);
+    onSaved();
+  };
+  const excluir = async () => {
+    if (!confirm("Excluir aluno e todo o histórico dele?")) return;
+    setBusy(true);
+    await sb.from("alunos").delete().eq("id", aluno.id);
+    setBusy(false);
+    onSaved();
+  };
+  return /*#__PURE__*/React.createElement(Sheet, {
+    open: true,
+    onClose: onClose,
+    title: aluno ? "Editar aluno" : "Novo aluno"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Nome"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: f.nome,
+    onChange: ev => up("nome", ev.target.value),
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "WhatsApp",
+    hint: "com DDD, s\xF3 n\xFAmeros. ex: 5551999998888"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    inputMode: "numeric",
+    value: f.telefone,
+    onChange: ev => up("telefone", ev.target.value)
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Modalidade"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    value: f.modalidade,
+    onChange: ev => up("modalidade", ev.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u2014"), Object.entries(MODS).map(([k, v]) => /*#__PURE__*/React.createElement("option", {
+    key: k,
+    value: k
+  }, v)))), /*#__PURE__*/React.createElement(Field, {
+    label: "Tipo"
+  }, /*#__PURE__*/React.createElement("select", {
+    className: inputCls,
+    value: f.tipo,
+    onChange: ev => up("tipo", ev.target.value)
+  }, /*#__PURE__*/React.createElement("option", {
+    value: "avulso"
+  }, "Avulso"), /*#__PURE__*/React.createElement("option", {
+    value: "pacote"
+  }, "Pacote")))), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Valor da aula (R$)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    step: "0.01",
+    className: inputCls,
+    value: f.valor_padrao,
+    onChange: ev => up("valor_padrao", ev.target.value)
+  })), f.tipo === "pacote" && /*#__PURE__*/React.createElement(Field, {
+    label: "Saldo (aulas)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "numeric",
+    className: inputCls,
+    value: f.saldo_pacote,
+    onChange: ev => up("saldo_pacote", ev.target.value)
+  }))), /*#__PURE__*/React.createElement(Field, {
+    label: "Observa\xE7\xF5es"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    rows: "2",
+    className: inputCls,
+    value: f.observacoes,
+    onChange: ev => up("observacoes", ev.target.value)
+  })), /*#__PURE__*/React.createElement("label", {
+    className: "flex items-center gap-2.5 text-sm text-slate-600 py-1"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    className: "w-5 h-5 rounded accent-court-700",
+    checked: f.ativo,
+    onChange: ev => up("ativo", ev.target.checked)
+  }), " Aluno ativo"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: salvar,
+    disabled: busy,
+    className: "flex-1"
+  }, "Salvar"), aluno && /*#__PURE__*/React.createElement(Btn, {
+    variant: "danger",
+    onClick: excluir,
+    disabled: busy
+  }, "Excluir")), aluno && /*#__PURE__*/React.createElement("div", {
+    className: "pt-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-slate-400 mb-2"
+  }, "Hist\xF3rico \xB7 ", hist.filter(h => h.status === "realizada").length, " realizada(s)"), /*#__PURE__*/React.createElement("div", {
+    className: "space-y-1.5 max-h-56 overflow-y-auto"
+  }, hist.length === 0 ? /*#__PURE__*/React.createElement(Empty, null, "Sem aulas.") : hist.map(h => /*#__PURE__*/React.createElement("div", {
+    key: h.id,
+    className: "flex items-center gap-2 text-xs bg-white rounded-lg px-3 py-2 ring-1 ring-black/5"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "font-semibold text-slate-600 num"
+  }, fmtDataHora(h.data_hora)), /*#__PURE__*/React.createElement("span", {
+    className: "text-slate-400"
+  }, MODS[h.modalidade]), /*#__PURE__*/React.createElement("span", {
+    className: `ml-auto font-semibold ${h.status === 'realizada' ? 'text-court-700' : h.status === 'cancelada' ? 'text-slate-400' : 'text-blue-600'}`
+  }, h.status)))))));
+}
+
+// ===================== FINANCEIRO =====================
+function Financeiro({
+  cobrancas,
+  despesas,
+  cfg,
+  reload
+}) {
+  const [sub, setSub] = useState("cobrancas");
+  const TABS = [["cobrancas", "Cobranças"], ["despesas", "Gastos"], ["config", "Ajustes"]];
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement("h1", {
+    className: "font-display text-2xl font-bold text-court-900"
+  }, "Financeiro"), /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-1 bg-black/5 p-1 rounded-xl text-sm font-semibold"
+  }, TABS.map(([k, v]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => setSub(k),
+    className: `flex-1 py-2 rounded-lg transition ${sub === k ? 'bg-white shadow-sm text-court-700' : 'text-slate-500'}`
+  }, v))), sub === "cobrancas" ? /*#__PURE__*/React.createElement(Cobrancas, {
+    cobrancas: cobrancas,
+    cfg: cfg,
+    reload: reload
+  }) : sub === "despesas" ? /*#__PURE__*/React.createElement(Despesas, {
+    despesas: despesas,
+    reload: reload
+  }) : /*#__PURE__*/React.createElement(Ajustes, {
+    cfg: cfg,
+    reload: reload
+  }));
+}
+const ST_LABEL = {
+  pendente: "Pendente",
+  aprovada: "Aprovada",
+  enviada: "Enviada",
+  paga: "Paga",
+  nao_paga: "Não paga",
+  cancelada: "Cancelada"
+};
+const ST_COLOR = {
+  pendente: "bg-clay-50 text-clay ring-1 ring-clay/20",
+  aprovada: "bg-blue-50 text-blue-700 ring-1 ring-blue-200",
+  enviada: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
+  paga: "bg-court-50 text-court-800 ring-1 ring-court-200",
+  nao_paga: "bg-red-50 text-red-700 ring-1 ring-red-200",
+  cancelada: "bg-slate-100 text-slate-400"
+};
+function Cobrancas({
+  cobrancas,
+  cfg,
+  reload
+}) {
+  const [filtro, setFiltro] = useState("ativas");
+  const now = new Date();
+  const grupos = {
+    ativas: cobrancas.filter(c => ["pendente", "aprovada", "enviada"].includes(c.status)),
+    pagas: cobrancas.filter(c => c.status === "paga"),
+    outras: cobrancas.filter(c => ["nao_paga", "cancelada"].includes(c.status))
+  };
+  const lista = grupos[filtro] || [];
+  const aprovar = async c => {
+    const msg = renderMsg(cfg?.mensagem_template, {
+      nome: c.aluno?.nome,
+      modalidade: c.aula?.modalidade,
+      data: c.aula ? fmtData(c.aula.data_hora) : "",
+      valor: c.valor,
+      pix_chave: cfg?.pix_chave,
+      pix_nome: cfg?.pix_nome
+    });
+    await sb.from("cobrancas").update({
+      status: "aprovada",
+      mensagem: msg
+    }).eq("id", c.id);
+    reload();
+  };
+  const setStatus = async (c, st, extra = {}) => {
+    await sb.from("cobrancas").update({
+      status: st,
+      ...extra
+    }).eq("id", c.id);
+    reload();
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2 text-xs font-semibold"
+  }, [["ativas", `Em aberto`, grupos.ativas.length], ["pagas", `Pagas`, grupos.pagas.length], ["outras", `Outras`, grupos.outras.length]].map(([k, v, n]) => /*#__PURE__*/React.createElement("button", {
+    key: k,
+    onClick: () => setFiltro(k),
+    className: `px-3 py-1.5 rounded-full transition ${filtro === k ? 'bg-court-700 text-white' : 'bg-white ring-1 ring-black/5 text-slate-500'}`
+  }, v, " ", n > 0 && /*#__PURE__*/React.createElement("span", {
+    className: filtro === k ? "text-white/70" : "text-slate-400"
+  }, n)))), lista.length === 0 ? /*#__PURE__*/React.createElement(Card, {
+    className: "p-8"
+  }, /*#__PURE__*/React.createElement(Empty, null, "Nada aqui.")) : /*#__PURE__*/React.createElement("div", {
+    className: "space-y-2.5"
+  }, lista.map(c => {
+    const pronta = c.status === "pendente" && new Date(c.data_prevista_envio + "T23:59:59") <= now;
+    const tel = c.aluno?.telefone ? c.aluno.telefone.replace(/\D/g, "") : null;
+    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(c.mensagem || renderMsg(cfg?.mensagem_template, {
+      nome: c.aluno?.nome,
+      modalidade: c.aula?.modalidade,
+      data: c.aula ? fmtData(c.aula.data_hora) : "",
+      valor: c.valor,
+      pix_chave: cfg?.pix_chave,
+      pix_nome: cfg?.pix_nome
+    }))}` : null;
+    return /*#__PURE__*/React.createElement(Card, {
+      key: c.id,
+      className: `p-4 ${pronta ? 'ring-clay/30' : ''}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "flex items-start justify-between gap-3"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "min-w-0"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold text-slate-800"
+    }, c.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+      className: "text-xs text-slate-400 mt-0.5"
+    }, c.aula && /*#__PURE__*/React.createElement(React.Fragment, null, fmtData(c.aula.data_hora), " \xB7 ", MODS[c.aula.modalidade], " \xB7 "), /*#__PURE__*/React.createElement("span", {
+      className: "font-display font-semibold text-slate-600 num"
+    }, BRL(c.valor)))), /*#__PURE__*/React.createElement(Badge, {
+      className: ST_COLOR[c.status]
+    }, ST_LABEL[c.status])), c.status === "pendente" && /*#__PURE__*/React.createElement("div", {
+      className: `text-xs mt-2 ${pronta ? 'text-clay font-semibold' : 'text-slate-400'}`
+    }, pronta ? "Pronta pra enviar" : `Envia em ${fmtData(c.data_prevista_envio + "T12:00:00")}`), (c.status === "aprovada" || c.status === "enviada") && c.mensagem && /*#__PURE__*/React.createElement("div", {
+      className: "mt-3 text-xs bg-black/[.03] rounded-xl px-3 py-2.5 text-slate-600 whitespace-pre-wrap leading-relaxed"
+    }, c.mensagem), /*#__PURE__*/React.createElement("div", {
+      className: "flex flex-wrap gap-2 mt-3"
+    }, c.status === "pendente" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      onClick: () => aprovar(c)
+    }, "Aprovar"), /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "outline",
+      onClick: () => setStatus(c, "cancelada")
+    }, "Cancelar")), c.status === "aprovada" && /*#__PURE__*/React.createElement(React.Fragment, null, wa && /*#__PURE__*/React.createElement("a", {
+      href: wa,
+      target: "_blank",
+      rel: "noreferrer",
+      className: "flex-1 min-w-[160px]"
+    }, /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "dark",
+      className: "w-full"
+    }, /*#__PURE__*/React.createElement(IcWhats, {
+      className: "w-4 h-4"
+    }), "Enviar no WhatsApp")), /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "soft",
+      onClick: () => setStatus(c, "enviada", {
+        data_enviada: new Date().toISOString()
+      })
+    }, "Marcar enviada")), (c.status === "aprovada" || c.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "accent",
+      onClick: () => setStatus(c, "paga", {
+        data_pagamento: new Date().toISOString()
+      })
+    }, "Recebi"), c.status === "enviada" && /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "danger",
+      onClick: () => setStatus(c, "nao_paga")
+    }, "N\xE3o pagou"), c.status === "nao_paga" && /*#__PURE__*/React.createElement(Btn, {
+      size: "sm",
+      variant: "accent",
+      onClick: () => setStatus(c, "paga", {
+        data_pagamento: new Date().toISOString()
+      })
+    }, "Recebi agora")));
+  })), /*#__PURE__*/React.createElement("p", {
+    className: "text-xs text-slate-400 px-1 leading-relaxed"
+  }, "Aula avulsa realizada entra como ", /*#__PURE__*/React.createElement("b", null, "pendente"), " ap\xF3s ", cfg?.dias_cobranca || 7, " dias. Voc\xEA aprova, envia pelo WhatsApp e marca ", /*#__PURE__*/React.createElement("b", null, "Recebi"), "."));
+}
+function Despesas({
+  despesas,
+  reload
+}) {
+  const [modal, setModal] = useState(false);
+  const total = despesas.reduce((s, d) => s + Number(d.valor), 0);
+  return /*#__PURE__*/React.createElement("div", {
+    className: "space-y-3"
+  }, /*#__PURE__*/React.createElement(Card, {
+    className: "p-4 flex items-center justify-between"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400 font-semibold"
+  }, "Total de gastos"), /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-xl font-bold text-slate-800 num mt-0.5"
+  }, BRL(total))), /*#__PURE__*/React.createElement(Btn, {
+    size: "sm",
+    variant: "accent",
+    onClick: () => setModal(true)
+  }, /*#__PURE__*/React.createElement(IcPlus, {
+    className: "w-4 h-4"
+  }), "Gasto")), /*#__PURE__*/React.createElement(Card, {
+    className: "divide-y divide-black/5"
+  }, despesas.length === 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "p-8"
+  }, /*#__PURE__*/React.createElement(Empty, null, "Nenhum gasto ainda.")) : despesas.map(d => /*#__PURE__*/React.createElement("div", {
+    key: d.id,
+    className: "flex items-center gap-3 px-4 py-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex-1 min-w-0"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "font-medium text-slate-700 truncate text-[15px]"
+  }, d.descricao), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400"
+  }, fmtData(d.data + "T12:00:00"), d.categoria && ` · ${d.categoria}`)), /*#__PURE__*/React.createElement("div", {
+    className: "font-display font-semibold text-slate-700 num text-sm"
+  }, BRL(d.valor)), /*#__PURE__*/React.createElement("button", {
+    onClick: async () => {
+      if (confirm("Excluir gasto?")) {
+        await sb.from("despesas").delete().eq("id", d.id);
+        reload();
+      }
+    },
+    className: "text-slate-300 active:text-red-500 text-lg leading-none w-7 h-7"
+  }, "\xD7")))), modal && /*#__PURE__*/React.createElement(DespesaModal, {
+    onClose: () => setModal(false),
+    onSaved: () => {
+      setModal(false);
+      reload();
+    }
+  }));
+}
+function DespesaModal({
+  onClose,
+  onSaved
+}) {
+  const [f, setF] = useState({
+    descricao: "",
+    valor: "",
+    data: toDateInput(new Date()),
+    categoria: ""
+  });
+  const [busy, setBusy] = useState(false);
+  const salvar = async () => {
+    if (!f.descricao.trim() || !f.valor) {
+      alert("Preencha descrição e valor.");
+      return;
+    }
+    setBusy(true);
+    await sb.from("despesas").insert({
+      descricao: f.descricao.trim(),
+      valor: Number(f.valor),
+      data: f.data,
+      categoria: f.categoria.trim() || null
+    });
+    setBusy(false);
+    onSaved();
+  };
+  return /*#__PURE__*/React.createElement(Sheet, {
+    open: true,
+    onClose: onClose,
+    title: "Novo gasto"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "space-y-4"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Descri\xE7\xE3o"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: f.descricao,
+    onChange: e => setF({
+      ...f,
+      descricao: e.target.value
+    }),
+    autoFocus: true
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Valor (R$)"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "decimal",
+    step: "0.01",
+    className: inputCls,
+    value: f.valor,
+    onChange: e => setF({
+      ...f,
+      valor: e.target.value
+    })
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Data"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "date",
+    className: inputCls,
+    value: f.data,
+    onChange: e => setF({
+      ...f,
+      data: e.target.value
+    })
+  }))), /*#__PURE__*/React.createElement(Field, {
+    label: "Categoria (opcional)"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: f.categoria,
+    onChange: e => setF({
+      ...f,
+      categoria: e.target.value
+    }),
+    placeholder: "Quadra, Material\u2026"
+  })), /*#__PURE__*/React.createElement(Btn, {
+    onClick: salvar,
+    disabled: busy,
+    className: "w-full"
+  }, "Salvar gasto")));
+}
+function Ajustes({
+  cfg,
+  reload
+}) {
+  const [f, setF] = useState({
+    pix_chave: cfg?.pix_chave || "",
+    pix_nome: cfg?.pix_nome || "",
+    dias_cobranca: cfg?.dias_cobranca || 7,
+    mensagem_template: cfg?.mensagem_template || ""
+  });
+  const [busy, setBusy] = useState(false);
+  const [ok, setOk] = useState(false);
+  const salvar = async () => {
+    setBusy(true);
+    await sb.from("config").update({
+      pix_chave: f.pix_chave.trim(),
+      pix_nome: f.pix_nome.trim(),
+      dias_cobranca: Number(f.dias_cobranca) || 7,
+      mensagem_template: f.mensagem_template
+    }).eq("id", 1);
+    setBusy(false);
+    setOk(true);
+    setTimeout(() => setOk(false), 2000);
+    reload();
+  };
+  const preview = renderMsg(f.mensagem_template, {
+    nome: "Bruno",
+    modalidade: "tenis",
+    data: "15/10",
+    valor: 90,
+    pix_chave: f.pix_chave,
+    pix_nome: f.pix_nome
+  });
+  return /*#__PURE__*/React.createElement(Card, {
+    className: "p-4 space-y-4"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid sm:grid-cols-2 gap-3"
+  }, /*#__PURE__*/React.createElement(Field, {
+    label: "Chave PIX"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: f.pix_chave,
+    onChange: e => setF({
+      ...f,
+      pix_chave: e.target.value
+    })
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Nome no PIX"
+  }, /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    value: f.pix_nome,
+    onChange: e => setF({
+      ...f,
+      pix_nome: e.target.value
+    })
+  }))), /*#__PURE__*/React.createElement(Field, {
+    label: "Cobrar quantos dias ap\xF3s a aula?"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    inputMode: "numeric",
+    className: inputCls,
+    value: f.dias_cobranca,
+    onChange: e => setF({
+      ...f,
+      dias_cobranca: e.target.value
+    })
+  })), /*#__PURE__*/React.createElement(Field, {
+    label: "Mensagem de cobran\xE7a",
+    hint: "use {nome} {modalidade} {data} {valor} {pix_chave} {pix_nome}"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    rows: "4",
+    className: inputCls,
+    value: f.mensagem_template,
+    onChange: e => setF({
+      ...f,
+      mensagem_template: e.target.value
+    })
+  })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-xs font-semibold text-slate-400 mb-1.5"
+  }, "Pr\xE9via"), /*#__PURE__*/React.createElement("div", {
+    className: "text-sm bg-[#e5ddd5] rounded-xl p-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "bg-white rounded-lg rounded-tl-none px-3 py-2 text-slate-700 whitespace-pre-wrap leading-relaxed shadow-sm max-w-[90%]"
+  }, preview))), /*#__PURE__*/React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, /*#__PURE__*/React.createElement(Btn, {
+    onClick: salvar,
+    disabled: busy
+  }, "Salvar ajustes"), ok && /*#__PURE__*/React.createElement("span", {
+    className: "text-sm text-court-700 font-semibold"
+  }, "\u2713 Salvo")));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(/*#__PURE__*/React.createElement(App, null));
+} catch (err) {
+  document.getElementById("root").innerHTML = '<div style="padding:24px;font-family:sans-serif;color:#b91c1c"><b>Erro ao carregar.</b><br><br>'+(err&&err.message?err.message:err)+'</div>';
+  console.error(err);
+}
+</script>
+</body>
+</html>
