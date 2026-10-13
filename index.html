@@ -248,6 +248,10 @@ function App() {
   const [cfg, setCfg] = useState(null);
   const load = useCallback(async () => {
     setLoading(true);
+    // aula agendada que já passou vira "feita" automaticamente (reverter = marcar não aconteceu)
+    await sb.from("aulas").update({
+      status: "realizada"
+    }).eq("status", "agendada").lt("data_hora", new Date().toISOString());
     const [a, au, co, de, c] = await Promise.all([sb.from("alunos").select("*").order("nome"), sb.from("aulas").select("*, aluno:alunos(id,nome,tipo,telefone)").order("data_hora"), sb.from("cobrancas").select("*, aluno:alunos(id,nome,telefone), aula:aulas(id,data_hora,modalidade)").order("data_prevista_envio"), sb.from("despesas").select("*").order("data", {
       ascending: false
     }), sb.from("config").select("*").eq("id", 1).single()]);
@@ -728,7 +732,7 @@ function Dashboard({
     d: "M21 21l-4-4"
   })), /*#__PURE__*/React.createElement("span", {
     className: "text-slate-400 text-[15px] flex-1"
-  }, "Buscar aluno\u2026")), prox ? /*#__PURE__*/React.createElement("div", {
+  }, "Buscar aluno\u2026")), /*#__PURE__*/React.createElement("div", {
     className: "relative overflow-hidden rounded-[28px] p-5 text-white shadow-lg shadow-court-900/20",
     style: {
       background: "linear-gradient(135deg,#0f3b2a 0%,#0f241c 60%)"
@@ -740,46 +744,31 @@ function Dashboard({
   }), /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-start justify-between"
+    className: "flex items-center justify-between"
   }, /*#__PURE__*/React.createElement("span", {
     className: "text-white/60 text-sm font-medium"
-  }, "Pr\xF3xima aula"), /*#__PURE__*/React.createElement("span", {
-    className: "bg-clay text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm"
-  }, countdown(prox.data_hora))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-3.5 mt-3"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 font-display font-bold text-white text-xl",
-    style: {
-      background: MOD_DOT[prox.modalidade],
-      boxShadow: "inset 0 0 0 2px rgba(255,255,255,.25)"
-    }
-  }, (prox.aluno?.nome || "?").trim().slice(0, 1).toUpperCase()), /*#__PURE__*/React.createElement("div", {
-    className: "min-w-0"
+  }, "A receber"), nAReceber > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go("fin"),
+    className: "text-ball text-xs font-semibold"
+  }, "Ver cobran\xE7as \u2192")), /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-4xl font-bold mt-1 num"
+  }, BRL(aReceber)), /*#__PURE__*/React.createElement("div", {
+    className: "text-white/50 text-xs mt-1"
+  }, nAReceber, " aula", nAReceber === 1 ? "" : "s", " em aberto"), /*#__PURE__*/React.createElement("div", {
+    className: "grid grid-cols-2 gap-2 mt-4"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "font-display text-xl font-bold leading-tight truncate"
-  }, prox.aluno?.nome), /*#__PURE__*/React.createElement("div", {
-    className: "text-white/60 text-sm"
-  }, MODS[prox.modalidade], " \xB7 ", BRL0(prox.valor)))), /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center gap-2 mt-4"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-2 text-xs font-semibold"
-  }, /*#__PURE__*/React.createElement(IcCal, {
-    className: "w-4 h-4 text-ball"
-  }), DIAS[pd.getDay()], " ", pad(pd.getDate()), "/", pad(pd.getMonth() + 1)), /*#__PURE__*/React.createElement("span", {
-    className: "flex items-center gap-1.5 bg-white/10 rounded-full px-3 py-2 text-xs font-semibold num"
-  }, fmtHora(prox.data_hora)), /*#__PURE__*/React.createElement("button", {
-    onClick: () => go("agenda"),
-    className: "ml-auto w-11 h-11 rounded-full bg-white text-court-900 flex items-center justify-center shadow-md active:scale-95 transition"
-  }, /*#__PURE__*/React.createElement(IcArrowR, {
-    className: "w-5 h-5"
-  }))))) : /*#__PURE__*/React.createElement("div", {
-    className: "rounded-[28px] p-6 text-center bg-white shadow-sm ring-1 ring-black/5"
+    className: "bg-white/10 rounded-2xl px-3.5 py-3"
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-slate-400 text-sm"
-  }, "Nenhuma aula agendada."), /*#__PURE__*/React.createElement("button", {
-    onClick: () => go("agenda"),
-    className: "text-court-700 font-semibold text-sm mt-1"
-  }, "Abrir agenda \u2192")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "text-white/60 text-[11px] font-medium"
+  }, "Recebido no m\xEAs"), /*#__PURE__*/React.createElement("div", {
+    className: "font-display text-lg font-bold num mt-0.5"
+  }, BRL0(recebidoMes))), /*#__PURE__*/React.createElement("div", {
+    className: "bg-white/10 rounded-2xl px-3.5 py-3"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-white/60 text-[11px] font-medium"
+  }, "Saldo no m\xEAs"), /*#__PURE__*/React.createElement("div", {
+    className: `font-display text-lg font-bold num mt-0.5 ${saldoMes >= 0 ? 'text-ball' : 'text-red-300'}`
+  }, BRL0(saldoMes)))))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center justify-between mb-3 px-1"
   }, /*#__PURE__*/React.createElement("h2", {
     className: "font-display font-bold text-court-900"
@@ -809,39 +798,26 @@ function Dashboard({
     grad: "linear-gradient(135deg,#fdecd8,#fbd9b4)",
     fg: "#b45309",
     onClick: () => go("fin")
-  }))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "flex items-center justify-between mb-3 px-1"
-  }, /*#__PURE__*/React.createElement("h2", {
-    className: "font-display font-bold text-court-900"
-  }, "Seu m\xEAs"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => go("fin"),
-    className: "text-court-700 text-sm font-semibold"
-  }, "Ver tudo")), /*#__PURE__*/React.createElement("div", {
-    className: "grid grid-cols-3 gap-2.5"
-  }, /*#__PURE__*/React.createElement(SoftStat, {
-    icon: IcMoney,
-    iconBg: "#fbeee8",
-    iconFg: "#c2552e",
-    label: "A receber",
-    value: BRL0(aReceber),
-    sub: `${nAReceber} aula${nAReceber === 1 ? "" : "s"}`,
-    valTone: "text-clay"
-  }), /*#__PURE__*/React.createElement(SoftStat, {
-    icon: IcBall,
-    iconBg: "#d1fadf",
-    iconFg: "#15663e",
-    label: "Recebido",
-    value: BRL0(recebidoMes),
-    sub: "no m\xEAs",
-    valTone: "text-court-700"
-  }), /*#__PURE__*/React.createElement(SoftStat, {
-    icon: IcArrowR,
-    iconBg: "#eef2ff",
-    iconFg: "#4338ca",
-    label: "Saldo",
-    value: BRL0(saldoMes),
-    sub: "no m\xEAs",
-    valTone: saldoMes >= 0 ? 'text-court-800' : 'text-red-600'
+  }))), prox && /*#__PURE__*/React.createElement("button", {
+    onClick: () => go("agenda"),
+    className: "w-full text-left"
+  }, /*#__PURE__*/React.createElement(Card, {
+    className: "p-4 flex items-center gap-3 rounded-3xl"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 font-display font-bold text-white",
+    style: {
+      background: MOD_DOT[prox.modalidade]
+    }
+  }, (prox.aluno?.nome || "?").trim().slice(0, 1).toUpperCase()), /*#__PURE__*/React.createElement("div", {
+    className: "min-w-0 flex-1"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "text-[11px] font-semibold text-slate-400"
+  }, "Pr\xF3xima aula \xB7 ", countdown(prox.data_hora)), /*#__PURE__*/React.createElement("div", {
+    className: "font-semibold text-slate-800 truncate"
+  }, prox.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+    className: "text-xs text-slate-400"
+  }, DIAS[pd.getDay()], " ", pad(pd.getDate()), "/", pad(pd.getMonth() + 1), " \xB7 ", fmtHora(prox.data_hora), " \xB7 ", MODS[prox.modalidade])), /*#__PURE__*/React.createElement(IcArrowR, {
+    className: "w-5 h-5 text-slate-300"
   }))), prontas.length > 0 && /*#__PURE__*/React.createElement("button", {
     onClick: () => go("fin"),
     className: "w-full text-left"
@@ -976,7 +952,17 @@ function AulaRow({
 
 // ===================== AGENDA =====================
 const HORA_INI = 7,
-  HORA_FIM = 22;
+  HORA_FIM = 22,
+  SLOT_MIN = 30;
+const SLOTS = [];
+for (let m = HORA_INI * 60; m < HORA_FIM * 60; m += SLOT_MIN) SLOTS.push(m); // minuto do dia de cada bloco
+const slotLabel = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const aulaStartMin = a => {
+  const d = new Date(a.data_hora);
+  return d.getHours() * 60 + d.getMinutes();
+};
+const aulaSpan = a => Math.max(1, Math.ceil((a.duracao_min || SLOT_MIN) / SLOT_MIN));
+const startIdxOf = a => Math.max(0, Math.min(SLOTS.length - 1, Math.round((aulaStartMin(a) - HORA_INI * 60) / SLOT_MIN)));
 const MES_LONGO = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 function Agenda({
   alunos,
@@ -991,17 +977,6 @@ function Agenda({
     return d;
   });
   const [modal, setModal] = useState(null);
-  const horas = useMemo(() => Array.from({
-    length: HORA_FIM - HORA_INI
-  }, (_, i) => HORA_INI + i), []);
-  const idx = useMemo(() => {
-    const m = {};
-    aulas.forEach(a => {
-      const d = new Date(a.data_hora);
-      m[`${toDateInput(d)}_${d.getHours()}`] = a;
-    });
-    return m;
-  }, [aulas]);
   const porDia = useMemo(() => {
     const m = {};
     aulas.forEach(a => {
@@ -1011,11 +986,35 @@ function Agenda({
     });
     return m;
   }, [aulas]);
+  // índice da semana: por dia, aulas que iniciam em cada slot + slots ocupados
+  const weekIdx = useMemo(() => {
+    const m = {};
+    aulas.forEach(a => {
+      if (a.status === "cancelada") return;
+      const k = toDateInput(new Date(a.data_hora));
+      if (!m[k]) m[k] = {
+        starts: {},
+        covered: new Set()
+      };
+      const s = startIdxOf(a);
+      const sp = aulaSpan(a);
+      m[k].starts[s] = a;
+      for (let j = 0; j < sp; j++) m[k].covered.add(s + j);
+    });
+    return m;
+  }, [aulas]);
   const open = payload => setModal(payload);
   const close = () => setModal(null);
   const saved = () => {
     setModal(null);
     reload();
+  };
+  const openNova = (dayDate, mins) => {
+    const d = new Date(dayDate);
+    d.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+    open({
+      novaDate: d
+    });
   };
   const nav = dir => {
     if (view === "dia") setAnchor(addDays(anchor, dir));else if (view === "semana") setAnchor(addDays(anchor, dir * 7));else {
@@ -1034,7 +1033,17 @@ function Agenda({
   const dias = Array.from({
     length: 7
   }, (_, i) => addDays(wkStart, i));
-  const livres = horas.filter(h => !idx[`${toDateInput(anchor)}_${h}`]);
+
+  // dia atual
+  const dayKey = toDateInput(anchor);
+  const dayAulas = (porDia[dayKey] || []).slice().sort((a, b) => new Date(a.data_hora) - new Date(b.data_hora));
+  const covered = new Set();
+  dayAulas.forEach(a => {
+    const s = startIdxOf(a);
+    const sp = aulaSpan(a);
+    for (let j = 0; j < sp; j++) covered.add(s + j);
+  });
+  const freeIdx = SLOTS.map((_, i) => i).filter(i => !covered.has(i));
   const label = view === "dia" ? diaLongo(anchor) : view === "semana" ? `${fmtData(dias[0])} – ${fmtData(dias[6])}` : `${MES_LONGO[anchor.getMonth()]} ${anchor.getFullYear()}`;
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-4"
@@ -1045,13 +1054,7 @@ function Agenda({
   }, "Agenda"), /*#__PURE__*/React.createElement(Btn, {
     variant: "accent",
     size: "sm",
-    onClick: () => {
-      const d = new Date(anchor);
-      d.setHours(10, 0, 0, 0);
-      open({
-        novaDate: d
-      });
-    }
+    onClick: () => openNova(anchor, 10 * 60)
   }, /*#__PURE__*/React.createElement(IcPlus, {
     className: "w-4 h-4"
   }), "Aula")), /*#__PURE__*/React.createElement("div", {
@@ -1083,104 +1086,111 @@ function Agenda({
   }, /*#__PURE__*/React.createElement(IcChev, {
     className: "w-5 h-5",
     dir: "r"
-  }))), view === "dia" && /*#__PURE__*/React.createElement(React.Fragment, null, livres.length > 0 ? /*#__PURE__*/React.createElement("div", {
-    className: "text-xs bg-court-50 text-court-800 ring-1 ring-court-200 rounded-xl px-3 py-2.5"
-  }, /*#__PURE__*/React.createElement("b", null, livres.length), " hor\xE1rio", livres.length === 1 ? "" : "s", " livre", livres.length === 1 ? "" : "s", ": ", livres.slice(0, 8).map(h => `${pad(h)}h`).join(" · "), livres.length > 8 ? "…" : "") : /*#__PURE__*/React.createElement("div", {
-    className: "text-xs bg-amber-50 text-amber-800 ring-1 ring-amber-200 rounded-xl px-3 py-2.5"
+  }))), view === "dia" && /*#__PURE__*/React.createElement(React.Fragment, null, freeIdx.length > 0 ? /*#__PURE__*/React.createElement("div", {
+    className: "text-xs bg-court-50 text-court-800 ring-1 ring-court-200 rounded-2xl px-3 py-2.5"
+  }, /*#__PURE__*/React.createElement("b", null, freeIdx.length), " hor\xE1rio", freeIdx.length === 1 ? "" : "s", " livre", freeIdx.length === 1 ? "" : "s", ": ", freeIdx.slice(0, 6).map(i => slotLabel(SLOTS[i])).join(" · "), freeIdx.length > 6 ? "…" : "") : /*#__PURE__*/React.createElement("div", {
+    className: "text-xs bg-amber-50 text-amber-800 ring-1 ring-amber-200 rounded-2xl px-3 py-2.5"
   }, "Dia lotado, nenhum hor\xE1rio livre."), /*#__PURE__*/React.createElement(Card, {
-    className: "p-1.5 divide-y divide-black/5"
-  }, horas.map(h => {
-    const a = idx[`${toDateInput(anchor)}_${h}`];
-    return /*#__PURE__*/React.createElement("div", {
-      key: h,
-      className: "flex items-stretch gap-2.5 py-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "w-11 shrink-0 pt-2.5 text-right"
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "font-display text-xs font-semibold text-slate-400 num"
-    }, pad(h), ":00")), a ? /*#__PURE__*/React.createElement("button", {
-      onClick: () => open({
-        aula: a
-      }),
-      className: `flex-1 min-w-0 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left active:brightness-[.98] ${a.status === 'cancelada' ? 'bg-slate-100' : a.status === 'realizada' ? 'bg-court-700' : 'bg-court-50 ring-1 ring-court-200'}`
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "min-w-0 flex-1"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: `font-semibold truncate text-[15px] ${a.status === 'cancelada' ? 'text-slate-400 line-through' : a.status === 'realizada' ? 'text-white' : 'text-court-900'}`
-    }, a.aluno?.nome), /*#__PURE__*/React.createElement("div", {
-      className: `text-xs truncate ${a.status === 'realizada' ? 'text-white/70' : 'text-slate-500'}`
-    }, MODS[a.modalidade], " \xB7 ", BRL0(a.valor), a.status === 'realizada' ? ' · feita' : ''))) : /*#__PURE__*/React.createElement("button", {
-      onClick: () => {
-        const d = new Date(anchor);
-        d.setHours(h, 0, 0, 0);
-        open({
-          novaDate: d
-        });
-      },
-      className: "flex-1 flex items-center rounded-xl px-3 py-2.5 text-slate-300 active:bg-slate-50 border border-dashed border-slate-200"
-    }, /*#__PURE__*/React.createElement(IcPlus, {
-      className: "w-4 h-4"
-    }), /*#__PURE__*/React.createElement("span", {
-      className: "text-xs ml-1.5 text-slate-400"
-    }, "Livre")));
-  }))), view === "semana" && /*#__PURE__*/React.createElement(Card, {
-    className: "overflow-x-auto"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "min-w-[640px]"
+    className: "p-2"
   }, /*#__PURE__*/React.createElement("div", {
     className: "grid",
     style: {
-      gridTemplateColumns: "48px repeat(7,1fr)"
+      gridTemplateColumns: "52px 1fr",
+      gridAutoRows: "48px"
+    }
+  }, SLOTS.map((m, i) => /*#__PURE__*/React.createElement(React.Fragment, {
+    key: i
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      gridColumn: 1,
+      gridRow: i + 1
+    },
+    className: "text-right pr-2 pt-1 text-[11px] font-semibold text-slate-400 num"
+  }, slotLabel(m)), !covered.has(i) && /*#__PURE__*/React.createElement("button", {
+    style: {
+      gridColumn: 2,
+      gridRow: i + 1
+    },
+    onClick: () => openNova(anchor, m),
+    className: "m-0.5 rounded-lg border border-dashed border-slate-200 text-slate-400 active:bg-slate-50 flex items-center justify-center gap-1 text-xs"
+  }, /*#__PURE__*/React.createElement(IcPlus, {
+    className: "w-3.5 h-3.5"
+  }), "Livre"))), dayAulas.map(a => {
+    const s = startIdxOf(a);
+    const sp = aulaSpan(a);
+    const feita = a.status === "realizada";
+    return /*#__PURE__*/React.createElement("button", {
+      key: a.id,
+      style: {
+        gridColumn: 2,
+        gridRow: `${s + 1} / span ${sp}`
+      },
+      onClick: () => open({
+        aula: a
+      }),
+      className: `m-0.5 rounded-xl px-3 py-2 text-left overflow-hidden active:brightness-[.98] ${feita ? 'bg-court-700 text-white' : 'bg-court-50 ring-1 ring-court-200 text-court-900'}`
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "font-semibold truncate text-[15px]"
+    }, a.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+      className: `text-xs truncate ${feita ? 'text-white/70' : 'text-slate-500'}`
+    }, MODS[a.modalidade], " \xB7 ", BRL0(a.valor), " \xB7 ", a.duracao_min || SLOT_MIN, "min", feita ? ' · feita' : ''));
+  })))), view === "semana" && /*#__PURE__*/React.createElement(Card, {
+    className: "overflow-x-auto"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "min-w-[680px]"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "grid",
+    style: {
+      gridTemplateColumns: "46px repeat(7,1fr)"
     }
   }, /*#__PURE__*/React.createElement("div", null), dias.map((d, i) => {
     const t = sameDay(d, new Date());
     return /*#__PURE__*/React.createElement("div", {
       key: i,
-      className: `py-2.5 text-center border-l border-black/5 ${t ? 'bg-court-50' : ''}`
+      className: `py-2 text-center border-l border-black/5 ${t ? 'bg-court-50' : ''}`
     }, /*#__PURE__*/React.createElement("div", {
       className: "text-[11px] font-semibold text-slate-400"
     }, DIAS[d.getDay()]), /*#__PURE__*/React.createElement("div", {
       className: `font-display text-sm font-bold num ${t ? 'text-court-700' : 'text-slate-700'}`
     }, pad(d.getDate())));
-  })), horas.map(h => /*#__PURE__*/React.createElement("div", {
-    key: h,
+  })), SLOTS.map((m, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
     className: "grid border-t border-black/5",
     style: {
-      gridTemplateColumns: "48px repeat(7,1fr)"
+      gridTemplateColumns: "46px repeat(7,1fr)"
     }
   }, /*#__PURE__*/React.createElement("div", {
-    className: "text-[10px] text-slate-400 font-semibold text-right pr-1.5 pt-1.5 num"
-  }, pad(h), "h"), dias.map((d, i) => {
-    const a = idx[`${toDateInput(d)}_${h}`];
+    className: "text-[9px] text-slate-400 font-semibold text-right pr-1.5 pt-1.5 num"
+  }, slotLabel(m)), dias.map((d, j) => {
+    const di = weekIdx[toDateInput(d)];
+    const a = di && di.starts[i];
+    const busy = di && di.covered.has(i);
     return /*#__PURE__*/React.createElement("div", {
-      key: i,
+      key: j,
       "data-slot": true,
-      className: "relative border-l border-black/5 h-12 p-1"
+      className: "relative border-l border-black/5 h-9 p-0.5"
     }, a ? /*#__PURE__*/React.createElement("button", {
       onClick: () => open({
         aula: a
       }),
-      className: `w-full h-full rounded-md px-1 py-0.5 text-left text-[10px] leading-tight overflow-hidden ${a.status === 'cancelada' ? 'bg-slate-100 text-slate-400 line-through' : a.status === 'realizada' ? 'bg-court-700 text-white' : 'bg-court-50 text-court-800 ring-1 ring-court-200'}`
+      className: `absolute left-0.5 right-0.5 top-0.5 z-10 rounded-md px-1 py-0.5 text-left text-[10px] leading-tight overflow-hidden ${a.status === 'realizada' ? 'bg-court-700 text-white' : 'bg-court-50 text-court-800 ring-1 ring-court-200'}`,
+      style: {
+        height: `calc(${aulaSpan(a) * 2.25}rem - 4px)`
+      }
     }, /*#__PURE__*/React.createElement("div", {
       className: "font-semibold truncate"
     }, a.aluno?.nome?.split(" ")[0]), /*#__PURE__*/React.createElement("div", {
       className: "truncate opacity-80"
-    }, MODS[a.modalidade])) : /*#__PURE__*/React.createElement("button", {
-      onClick: () => {
-        const dt = new Date(d);
-        dt.setHours(h, 0, 0, 0);
-        open({
-          novaDate: dt
-        });
-      },
+    }, MODS[a.modalidade])) : busy ? null : /*#__PURE__*/React.createElement("button", {
+      onClick: () => openNova(d, m),
       className: "slot-add opacity-0 w-full h-full rounded-md text-court-400 hover:bg-court-50 flex items-center justify-center"
     }, /*#__PURE__*/React.createElement(IcPlus, {
-      className: "w-3.5 h-3.5"
+      className: "w-3 h-3"
     })));
   }))))), view === "mes" && /*#__PURE__*/React.createElement(MonthView, {
     anchor: anchor,
     porDia: porDia,
-    cap: horas.length,
+    cap: SLOTS.length,
     onDay: d => {
       setAnchor(d);
       setView("dia");
@@ -1244,9 +1254,11 @@ function AulaModal({
   const a = modal.aula;
   const [alunoId, setAlunoId] = useState(a?.aluno_id || "");
   const [data, setData] = useState(a ? toDateInput(new Date(a.data_hora)) : toDateInput(modal.novaDate));
-  const [hora, setHora] = useState(a ? pad(new Date(a.data_hora).getHours()) : pad(modal.novaDate.getHours()));
+  const hhmm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const [hora, setHora] = useState(a ? hhmm(new Date(a.data_hora)) : hhmm(modal.novaDate));
   const [modalidade, setModalidade] = useState(a?.modalidade || "");
   const [valor, setValor] = useState(a?.valor ?? "");
+  const [duracao, setDuracao] = useState(a?.duracao_min ?? SLOT_MIN);
   const [busy, setBusy] = useState(false);
   const alunoSel = alunos.find(x => x.id === alunoId);
   const passada = new Date(`${data}T${hora}:00`) < new Date();
@@ -1267,7 +1279,8 @@ function AulaModal({
       aluno_id: alunoId,
       data_hora: dh.toISOString(),
       modalidade,
-      valor: Number(valor) || 0
+      valor: Number(valor) || 0,
+      duracao_min: Number(duracao) || SLOT_MIN
     };
     if (editing) await sb.from("aulas").update(payload).eq("id", a.id);else await sb.from("aulas").insert(payload);
     setBusy(false);
@@ -1288,6 +1301,7 @@ function AulaModal({
       data_hora: dh.toISOString(),
       modalidade,
       valor: Number(valor) || 0,
+      duracao_min: Number(duracao) || SLOT_MIN,
       status: "realizada"
     }).select("id").single();
     if (alunoSel?.tipo === "avulso" && ins?.id) {
@@ -1371,17 +1385,26 @@ function AulaModal({
     value: data,
     onChange: e => setData(e.target.value)
   })), /*#__PURE__*/React.createElement(Field, {
-    label: "Hora"
+    label: "Hora de in\xEDcio"
   }, /*#__PURE__*/React.createElement("select", {
     className: inputCls,
     value: hora,
     onChange: e => setHora(e.target.value)
-  }, Array.from({
-    length: HORA_FIM - HORA_INI
-  }, (_, i) => pad(HORA_INI + i)).map(h => /*#__PURE__*/React.createElement("option", {
+  }, !SLOTS.map(slotLabel).includes(hora) && /*#__PURE__*/React.createElement("option", {
+    value: hora
+  }, hora), SLOTS.map(m => slotLabel(m)).map(h => /*#__PURE__*/React.createElement("option", {
     key: h,
     value: h
-  }, h, ":00"))))), /*#__PURE__*/React.createElement("div", {
+  }, h))))), /*#__PURE__*/React.createElement(Field, {
+    label: "Dura\xE7\xE3o"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "flex gap-2"
+  }, [[30, "30 min"], [60, "1h"], [90, "1h30"], [120, "2h"]].map(([v, lbl]) => /*#__PURE__*/React.createElement("button", {
+    key: v,
+    type: "button",
+    onClick: () => setDuracao(v),
+    className: `flex-1 py-2.5 rounded-xl text-sm font-semibold transition ${Number(duracao) === v ? 'bg-court-700 text-white' : 'bg-white ring-1 ring-slate-300 text-slate-600'}`
+  }, lbl)))), /*#__PURE__*/React.createElement("div", {
     className: "grid grid-cols-2 gap-3"
   }, /*#__PURE__*/React.createElement(Field, {
     label: "Modalidade"
@@ -1440,10 +1463,10 @@ function AulaModal({
   }, "Cancelar aula"), a.status === "realizada" && /*#__PURE__*/React.createElement(Btn, {
     variant: "outline",
     size: "sm",
-    onClick: () => setStatus("agendada"),
+    onClick: () => setStatus("cancelada"),
     disabled: busy,
     className: "flex-1"
-  }, "Reverter"), a.status === "cancelada" && /*#__PURE__*/React.createElement(Btn, {
+  }, "N\xE3o aconteceu"), a.status === "cancelada" && /*#__PURE__*/React.createElement(Btn, {
     variant: "outline",
     size: "sm",
     onClick: () => setStatus("agendada"),
@@ -1772,11 +1795,10 @@ function Cobrancas({
   reload
 }) {
   const [filtro, setFiltro] = useState("aberto");
+  const [q, setQ] = useState("");
   const [edit, setEdit] = useState(null);
   const now = new Date();
   const dias = cfg?.dias_cobranca || 7;
-
-  // cobrança indexada pela aula
   const coByAula = useMemo(() => {
     const m = {};
     cobrancas.forEach(c => {
@@ -1785,8 +1807,7 @@ function Cobrancas({
     return m;
   }, [cobrancas]);
 
-  // RECEBÍVEIS = toda aula avulsa já realizada. A aula é a fonte da verdade;
-  // a cobrança (se existir) só carrega o status do pagamento.
+  // RECEBÍVEIS = toda aula avulsa já realizada; a aula é a fonte da verdade.
   const recs = useMemo(() => aulas.filter(a => a.status === "realizada" && a.aluno?.tipo === "avulso").map(a => {
     const co = coByAula[a.id] || null;
     const status = co ? co.status : "pendente";
@@ -1804,15 +1825,45 @@ function Cobrancas({
   }), [aulas, coByAula, dias]);
   const prazoPassou = r => new Date(r.prevista + "T23:59:59") <= now;
   const dataAula = r => new Date(r.aula.data_hora).getTime();
-  const grupos = {
-    todas: [...recs].filter(r => r.status !== "cancelada").sort((a, b) => dataAula(b) - dataAula(a)),
-    aberto: recs.filter(r => ["pendente", "aprovada", "enviada", "nao_paga"].includes(r.status)).sort((a, b) => dataAula(a) - dataAula(b)),
-    cobrar: recs.filter(r => r.status === "pendente" && prazoPassou(r)).sort((a, b) => dataAula(a) - dataAula(b)),
-    pagas: recs.filter(r => r.status === "paga").sort((a, b) => new Date(b.co?.data_pagamento || 0) - new Date(a.co?.data_pagamento || 0))
+  const nomeMatch = nome => (nome || "").toLowerCase().includes(q.toLowerCase());
+
+  // agrupa por aluno as aulas ainda em aberto (não pagas/canceladas)
+  const grupos = useMemo(() => {
+    const open = recs.filter(r => ["pendente", "aprovada", "enviada", "nao_paga"].includes(r.status));
+    const by = {};
+    open.forEach(r => {
+      (by[r.aluno.id] = by[r.aluno.id] || []).push(r);
+    });
+    return Object.values(by).map(items => {
+      items.sort((a, b) => dataAula(a) - dataAula(b));
+      const pend = items.filter(r => r.status === "pendente");
+      const total = items.reduce((s, r) => s + Number(r.valor || 0), 0);
+      const overduePend = pend.some(prazoPassou);
+      const msgPreview = items.map(r => r.co?.mensagem).find(Boolean);
+      return {
+        aluno: items[0].aluno,
+        items,
+        pend,
+        total,
+        overduePend,
+        msgPreview
+      };
+    }).sort((a, b) => b.overduePend - a.overduePend || dataAula(a.items[0]) - dataAula(b.items[0]));
+  }, [recs]);
+  const abertoGroups = grupos.filter(g => nomeMatch(g.aluno?.nome));
+  const cobrarGroups = abertoGroups.filter(g => g.overduePend);
+  const todasRecs = recs.filter(r => r.status !== "cancelada" && nomeMatch(r.aluno?.nome)).sort((a, b) => dataAula(b) - dataAula(a));
+  const pagasRecs = recs.filter(r => r.status === "paga" && nomeMatch(r.aluno?.nome)).sort((a, b) => new Date(b.co?.data_pagamento || 0) - new Date(a.co?.data_pagamento || 0));
+  const totalAberto = grupos.reduce((s, g) => s + Number(g.total || 0), 0);
+  const counts = {
+    todas: recs.filter(r => r.status !== "cancelada").length,
+    aberto: grupos.length,
+    cobrar: grupos.filter(g => g.overduePend).length,
+    pagas: recs.filter(r => r.status === "paga").length
   };
-  const lista = grupos[filtro] || [];
-  const totalAberto = grupos.aberto.reduce((s, r) => s + Number(r.valor || 0), 0);
-  const msgFor = r => renderMsg(cfg?.mensagem_template, {
+
+  // mensagem combinada (ou única, via template, quando só tem 1 aula)
+  const msgUnica = r => renderMsg(cfg?.mensagem_template, {
     nome: r.aluno?.nome,
     modalidade: r.aula?.modalidade,
     data: fmtData(r.aula.data_hora),
@@ -1820,8 +1871,13 @@ function Cobrancas({
     pix_chave: cfg?.pix_chave,
     pix_nome: cfg?.pix_nome
   });
-  // garante que exista uma linha de cobrança pra essa aula; cria se faltar
-  const ensureCo = async (r, campos) => {
+  const money = v => (Number(v) || 0).toFixed(2).replace(".", ",");
+  const msgGrupo = (aluno, items) => {
+    const linhas = items.map(r => `• ${MODS[r.aula.modalidade]} ${fmtData(r.aula.data_hora)} — R$ ${money(r.valor)}`).join("\n");
+    const total = items.reduce((s, r) => s + Number(r.valor || 0), 0);
+    return `Oi ${(aluno?.nome || "").split(" ")[0]}! Passando pra lembrar das suas aulas em aberto:\n${linhas}\nTotal: R$ ${money(total)}\nChave PIX: ${cfg?.pix_chave || ""} (${cfg?.pix_nome || ""}). Qualquer coisa me chama! 🎾`;
+  };
+  const upsertCo = async (r, campos) => {
     if (r.co) await sb.from("cobrancas").update(campos).eq("id", r.co.id);else await sb.from("cobrancas").insert({
       aula_id: r.aula.id,
       aluno_id: r.aula.aluno_id,
@@ -1829,21 +1885,48 @@ function Cobrancas({
       data_prevista_envio: r.prevista,
       ...campos
     });
+  };
+  // cobra o grupo: UMA mensagem (combinada se 2+). Carrier dispara; demais só saem da fila.
+  const cobrarGrupo = async g => {
+    if (!g.pend.length) return;
+    const carrier = g.pend[g.pend.length - 1];
+    const msg = g.pend.length === 1 ? msgUnica(carrier) : msgGrupo(g.aluno, g.pend);
+    await upsertCo(carrier, {
+      status: "aprovada",
+      mensagem: msg
+    });
+    for (const r of g.pend) {
+      if (r.id !== carrier.id) await upsertCo(r, {
+        status: "enviada",
+        data_enviada: new Date().toISOString(),
+        mensagem: "(incluída na cobrança combinada)"
+      });
+    }
     reload();
   };
-  const cobrar = r => ensureCo(r, {
-    status: "aprovada",
-    mensagem: msgFor(r)
-  });
-  const marcar = (r, st, extra = {}) => ensureCo(r, {
-    status: st,
-    ...extra
-  });
+  const recebiGrupo = async g => {
+    for (const r of g.items) {
+      await upsertCo(r, {
+        status: "paga",
+        data_pagamento: new Date().toISOString()
+      });
+    }
+    reload();
+  };
+  const marcar = async (r, st, extra = {}) => {
+    await upsertCo(r, {
+      status: st,
+      ...extra
+    });
+    reload();
+  };
+  const TABS = [["todas", "Todas"], ["aberto", "Em aberto"], ["cobrar", "Cobrar"], ["pagas", "Pagas"]];
   return /*#__PURE__*/React.createElement("div", {
     className: "space-y-3"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 text-xs font-semibold overflow-x-auto pb-1 -mx-1 px-1"
-  }, [["todas", `Todas`, grupos.todas.length], ["aberto", `Em aberto`, grupos.aberto.length], ["cobrar", `Cobrar`, grupos.cobrar.length], ["pagas", `Pagas`, grupos.pagas.length]].map(([k, v, n]) => {
+  }, TABS.map(([k, v]) => {
+    const n = counts[k];
     const alerta = k === "cobrar" && n > 0;
     return /*#__PURE__*/React.createElement("button", {
       key: k,
@@ -1852,21 +1935,78 @@ function Cobrancas({
     }, v, " ", n > 0 && /*#__PURE__*/React.createElement("span", {
       className: filtro === k ? "text-white/70" : alerta ? "text-clay" : "text-slate-400"
     }, n));
-  })), filtro === "aberto" && grupos.aberto.length > 0 && /*#__PURE__*/React.createElement("div", {
+  })), /*#__PURE__*/React.createElement("input", {
+    className: inputCls,
+    placeholder: "Buscar por nome do aluno\u2026",
+    value: q,
+    onChange: e => setQ(e.target.value)
+  }), filtro === "aberto" && grupos.length > 0 && !q && /*#__PURE__*/React.createElement("div", {
     className: "text-xs text-slate-400 px-1"
   }, "A receber: ", /*#__PURE__*/React.createElement("b", {
     className: "text-slate-600 num"
-  }, BRL(totalAberto))), lista.length === 0 ? /*#__PURE__*/React.createElement(Card, {
-    className: "p-8"
-  }, /*#__PURE__*/React.createElement(Empty, null, filtro === "cobrar" ? "Ninguém pra cobrar agora. Tudo em dia." : filtro === "pagas" ? "Nenhuma aula paga ainda." : filtro === "aberto" ? "Nada em aberto. Tudo pago." : "Nenhuma aula avulsa realizada ainda.")) : /*#__PURE__*/React.createElement("div", {
-    className: "space-y-2.5"
-  }, lista.map(r => {
-    const pronta = r.status === "pendente" && prazoPassou(r);
-    const tel = r.aluno?.telefone ? r.aluno.telefone.replace(/\D/g, "") : null;
-    const wa = tel ? `https://wa.me/${tel}?text=${encodeURIComponent(r.co?.mensagem || msgFor(r))}` : null;
-    return /*#__PURE__*/React.createElement(Card, {
+  }, BRL(totalAberto))), (filtro === "aberto" || filtro === "cobrar") && (() => {
+    const gs = filtro === "cobrar" ? cobrarGroups : abertoGroups;
+    if (gs.length === 0) return /*#__PURE__*/React.createElement(Card, {
+      className: "p-8"
+    }, /*#__PURE__*/React.createElement(Empty, null, filtro === "cobrar" ? "Ninguém pra cobrar agora. Tudo em dia." : "Nada em aberto. Tudo pago."));
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-2.5"
+    }, gs.map(g => {
+      const multi = g.items.length > 1;
+      return /*#__PURE__*/React.createElement(Card, {
+        key: g.aluno.id,
+        className: `p-4 ${g.overduePend ? 'ring-clay/30' : ''}`
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "flex items-start justify-between gap-3"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "min-w-0 flex-1"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "font-semibold text-slate-800"
+      }, g.aluno?.nome), /*#__PURE__*/React.createElement("div", {
+        className: "text-xs text-slate-400 mt-0.5"
+      }, g.items.length, " aula", multi ? "s" : "", " \xB7 total ", /*#__PURE__*/React.createElement("span", {
+        className: "font-display font-semibold text-slate-600 num"
+      }, BRL(g.total)))), g.pend.length > 0 ? /*#__PURE__*/React.createElement(Badge, {
+        className: g.overduePend ? ST_COLOR.pendente : "bg-slate-100 text-slate-500"
+      }, g.overduePend ? "Pronta pra cobrar" : "Em aberto") : /*#__PURE__*/React.createElement(Badge, {
+        className: ST_COLOR.enviada
+      }, "Cobrado")), multi && /*#__PURE__*/React.createElement("div", {
+        className: "mt-2.5 space-y-1 border-l-2 border-black/5 pl-3"
+      }, g.items.map(r => /*#__PURE__*/React.createElement("div", {
+        key: r.id,
+        className: "flex items-center justify-between text-xs"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "text-slate-500"
+      }, MODS[r.aula.modalidade], " \xB7 ", fmtData(r.aula.data_hora)), /*#__PURE__*/React.createElement("span", {
+        className: "num text-slate-500"
+      }, BRL(r.valor))))), !multi && /*#__PURE__*/React.createElement("div", {
+        className: "text-xs text-slate-400 mt-1"
+      }, MODS[g.items[0].aula.modalidade], " \xB7 aula ", fmtData(g.items[0].aula.data_hora)), g.msgPreview && g.msgPreview[0] !== "(" && /*#__PURE__*/React.createElement("div", {
+        className: "mt-3 text-xs bg-black/[.03] rounded-xl px-3 py-2.5 text-slate-600 whitespace-pre-wrap leading-relaxed"
+      }, g.msgPreview), /*#__PURE__*/React.createElement("div", {
+        className: "flex flex-wrap gap-2 mt-3"
+      }, g.pend.length > 0 && /*#__PURE__*/React.createElement(Btn, {
+        size: "sm",
+        variant: "accent",
+        onClick: () => cobrarGrupo(g)
+      }, /*#__PURE__*/React.createElement(IcWhats, {
+        className: "w-4 h-4"
+      }), "Cobrar", g.pend.length > 1 ? ` (${g.pend.length})` : ""), /*#__PURE__*/React.createElement(Btn, {
+        size: "sm",
+        variant: "soft",
+        onClick: () => recebiGrupo(g)
+      }, "Recebi", multi ? " tudo" : "")));
+    }));
+  })(), (filtro === "todas" || filtro === "pagas") && (() => {
+    const rs = filtro === "pagas" ? pagasRecs : todasRecs;
+    if (rs.length === 0) return /*#__PURE__*/React.createElement(Card, {
+      className: "p-8"
+    }, /*#__PURE__*/React.createElement(Empty, null, filtro === "pagas" ? "Nenhuma aula paga ainda." : "Nenhuma aula avulsa realizada ainda."));
+    return /*#__PURE__*/React.createElement("div", {
+      className: "space-y-2.5"
+    }, rs.map(r => /*#__PURE__*/React.createElement(Card, {
       key: r.id,
-      className: `p-4 ${pronta ? 'ring-clay/30' : ''}`
+      className: "p-4"
     }, /*#__PURE__*/React.createElement("div", {
       className: "flex items-start justify-between gap-3"
     }, /*#__PURE__*/React.createElement("div", {
@@ -1879,68 +2019,25 @@ function Cobrancas({
       className: "font-display font-semibold text-slate-600 num"
     }, BRL(r.valor)))), /*#__PURE__*/React.createElement(Badge, {
       className: ST_COLOR[r.status]
-    }, ST_LABEL[r.status])), r.status === "pendente" && /*#__PURE__*/React.createElement("div", {
-      className: `text-xs mt-2 ${pronta ? 'text-clay font-semibold' : 'text-slate-400'}`
-    }, pronta ? "Pronta pra cobrar" : `Prazo em ${fmtData(r.prevista + "T12:00:00")} (dá pra cobrar antes)`), r.status === "aprovada" && /*#__PURE__*/React.createElement("div", {
-      className: "text-xs mt-2 text-violet-700 font-semibold"
-    }, "Na fila de envio pelo WhatsApp\u2026 (sai em at\xE9 1 min)"), r.status === "paga" && r.co?.data_pagamento && /*#__PURE__*/React.createElement("div", {
+    }, ST_LABEL[r.status])), r.status === "paga" && r.co?.data_pagamento && /*#__PURE__*/React.createElement("div", {
       className: "text-xs mt-2 text-court-700 font-semibold"
-    }, "Pago em ", fmtData(r.co.data_pagamento)), (r.status === "aprovada" || r.status === "enviada") && r.co?.mensagem && /*#__PURE__*/React.createElement("div", {
-      className: "mt-3 text-xs bg-black/[.03] rounded-xl px-3 py-2.5 text-slate-600 whitespace-pre-wrap leading-relaxed"
-    }, r.co.mensagem), /*#__PURE__*/React.createElement("div", {
+    }, "Pago em ", fmtData(r.co.data_pagamento)), /*#__PURE__*/React.createElement("div", {
       className: "flex flex-wrap gap-2 mt-3"
-    }, r.status === "pendente" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "accent",
-      onClick: () => cobrar(r)
-    }, /*#__PURE__*/React.createElement(IcWhats, {
-      className: "w-4 h-4"
-    }), "Cobrar"), /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "soft",
-      onClick: () => marcar(r, "paga", {
-        data_pagamento: new Date().toISOString()
-      })
-    }, "Recebi em dinheiro")), (r.status === "aprovada" || r.status === "enviada") && /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "accent",
-      onClick: () => marcar(r, "paga", {
-        data_pagamento: new Date().toISOString()
-      })
-    }, "Recebi"), r.status === "enviada" && /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "danger",
-      onClick: () => marcar(r, "nao_paga")
-    }, "N\xE3o pagou"), r.status === "nao_paga" && /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "accent",
-      onClick: () => marcar(r, "paga", {
-        data_pagamento: new Date().toISOString()
-      })
-    }, "Recebi agora"), r.status === "paga" && /*#__PURE__*/React.createElement(Btn, {
+    }, r.status === "paga" && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "outline",
       onClick: () => marcar(r, "pendente", {
         data_pagamento: null
       })
-    }, "Desfazer"), r.status === "aprovada" && wa && /*#__PURE__*/React.createElement("a", {
-      href: wa,
-      target: "_blank",
-      rel: "noreferrer"
-    }, /*#__PURE__*/React.createElement(Btn, {
-      size: "sm",
-      variant: "ghost"
-    }, /*#__PURE__*/React.createElement(IcWhats, {
-      className: "w-4 h-4"
-    }), "enviar na m\xE3o")), r.co && /*#__PURE__*/React.createElement(Btn, {
+    }, "Desfazer pagamento"), r.co && /*#__PURE__*/React.createElement(Btn, {
       size: "sm",
       variant: "ghost",
       onClick: () => setEdit(r.co),
       className: "ml-auto"
-    }, "Editar")));
-  })), /*#__PURE__*/React.createElement("p", {
+    }, "Editar")))));
+  })(), /*#__PURE__*/React.createElement("p", {
     className: "text-xs text-slate-400 px-1 leading-relaxed"
-  }, "Toda aula ", /*#__PURE__*/React.createElement("b", null, "avulsa marcada como feita"), " entra aqui como receb\xEDvel. Passou ", dias, " dias, aparece em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), ". Toque em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), " e o sistema dispara a mensagem sozinho pelo WhatsApp; quem pagou em dinheiro, marque ", /*#__PURE__*/React.createElement("b", null, "Recebi"), ". Aluno de pacote n\xE3o entra (j\xE1 \xE9 pr\xE9-pago)."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
+  }, "Toda aula ", /*#__PURE__*/React.createElement("b", null, "avulsa feita"), " entra aqui. As aulas n\xE3o cobradas do mesmo aluno ficam ", /*#__PURE__*/React.createElement("b", null, "juntas"), " num card. Toque em ", /*#__PURE__*/React.createElement("b", null, "Cobrar"), " e sai ", /*#__PURE__*/React.createElement("b", null, "uma mensagem s\xF3"), " com o total pelo WhatsApp; quem pagou, marque ", /*#__PURE__*/React.createElement("b", null, "Recebi"), ". Aluno de pacote n\xE3o entra (pr\xE9-pago)."), edit && /*#__PURE__*/React.createElement(CobrancaModal, {
     cobranca: edit,
     onClose: () => setEdit(null),
     onSaved: () => {
